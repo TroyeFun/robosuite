@@ -348,3 +348,26 @@ class SawyerLift(SawyerEnv):
             rgba[3] = 0.5
 
             self.sim.model.site_rgba[self.eef_site_id] = rgba
+
+
+if __name__ == '__main__':
+    import pdb
+    import cv2
+    import os
+
+
+    env = SawyerLift(has_renderer=True,
+                     camera_depth=True,
+                     camera_name='birdview')
+                     #camera_name='frontview')
+                     #camera_name='agentview')
+    while True:
+        env.render()
+        obs = env._get_observation()
+        rgb, depth = obs['image'], obs['depth']
+        rgb=cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
+        cv2.imshow('rgb', rgb)
+        cv2.waitKey(1000)
+        cv2.imshow('depth', depth)
+        cv2.waitKey(1000)
+        pdb.set_trace()

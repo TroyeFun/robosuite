@@ -111,8 +111,10 @@ class SawyerLift(SawyerEnv):
             self.placement_initializer = placement_initializer
         else:
             self.placement_initializer = UniformRandomSampler(
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
+                #x_range=[-0.03, 0.03],
+                #y_range=[-0.03, 0.03],
+                x_range=[0.2, 0.21],
+                y_range=[0.2, 0.21],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -156,7 +158,7 @@ class SawyerLift(SawyerEnv):
         cube = BoxObject(
             size_min=[0.020, 0.020, 0.020],  # [0.015, 0.015, 0.015],
             size_max=[0.022, 0.022, 0.022],  # [0.018, 0.018, 0.018])
-            rgba=[1, 0, 0, 1],
+            rgba=[0, 0, 255, 1],
         )
         self.mujoco_objects = OrderedDict([("cube", cube)])
 
@@ -358,16 +360,26 @@ if __name__ == '__main__':
 
     env = SawyerLift(has_renderer=True,
                      camera_depth=True,
-                     camera_name='birdview')
+                     #camera_name='birdview')
                      #camera_name='frontview')
-                     #camera_name='agentview')
+                     camera_name='agentview')
     while True:
         env.render()
         obs = env._get_observation()
-        rgb, depth = obs['image'], obs['depth']
-        rgb=cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
-        cv2.imshow('rgb', rgb)
-        cv2.waitKey(1000)
+        color, depth = obs['image'], obs['depth']
+        color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
+        color = cv2.flip(color, 0) # horizontal flip
+        depth = cv2.flip(depth, 0) # horizontal flip
+        cv2.imshow('color', color)
+        cv2.waitKey(100)
         cv2.imshow('depth', depth)
-        cv2.waitKey(1000)
+        cv2.waitKey(100)
+
+        lower = np.array([80, 100, 100], dtype='uint8')  # h, s, v
+        upper = np.array([124, 255, 255], dtype='uint8')
+        hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, lower, upper)
+        cv2.imshow('mask', mask)
+        cv2.waitKey(100)
+
         pdb.set_trace()

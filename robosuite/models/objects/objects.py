@@ -307,3 +307,20 @@ class MujocoGeneratedObject(MujocoObject):
                 template["name"] = name
             main_body.append(ET.Element("site", attrib=template))
         return main_body
+
+
+if __name__ == '__main__':
+    from robosuite.utils import MujocoPyRenderer
+    from mujoco_py import MjSim
+    fpath = 'models/assets/objects/can-visual.xml'
+    #fpath = 'models/assets/objects/can.xml'
+    model = MujocoXMLObject(fpath)
+
+    print(ET.tostring(model.root, encoding='unicode'))
+
+    sim = MjSim(model.get_model(mode='mujoco_py'))
+    viewer = MujocoPyRenderer(sim)
+    viewer.render()
+
+    import pdb
+    pdb.set_trace()

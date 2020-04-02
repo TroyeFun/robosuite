@@ -631,3 +631,38 @@ class SawyerPickPlaceCan(SawyerPickPlace):
             "single_object_mode" not in kwargs and "object_type" not in kwargs
         ), "invalid set of arguments"
         super().__init__(single_object_mode=2, object_type="can", **kwargs)
+
+
+if __name__ == '__main__':
+    import pdb
+    import cv2
+    import os
+
+
+    env = SawyerPickPlace(has_renderer=True,
+                     camera_depth=True,
+                     #camera_name='birdview')
+                     #camera_name='frontview')
+                     camera_name='agentview')
+    while True:
+        env.render()
+        obs = env._get_observation()
+        color, depth = obs['image'], obs['depth']
+        color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
+        color = cv2.flip(color, 0) # horizontal flip
+        depth = cv2.flip(depth, 0) # horizontal flip
+        cv2.imshow('color', color)
+        cv2.waitKey(100)
+        cv2.imshow('depth', depth)
+        cv2.waitKey(100)
+
+        #lower = np.array([80, 100, 100], dtype='uint8')  # h, s, v
+        #upper = np.array([124, 255, 255], dtype='uint8')
+        #hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+        #mask = cv2.inRange(hsv, lower, upper)
+        #cv2.imshow('mask', mask)
+        #cv2.waitKey(100)
+
+        import xml.etree.ElementTree as ET
+
+        pdb.set_trace()

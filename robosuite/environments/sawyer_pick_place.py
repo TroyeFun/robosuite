@@ -634,7 +634,7 @@ class SawyerPickPlaceCan(SawyerPickPlace):
 
 
 if __name__ == '__main__':
-    import pdb
+    import ipdb
     import cv2
     import os
 
@@ -665,4 +665,4 @@ if __name__ == '__main__':
 
         import xml.etree.ElementTree as ET
 
-        pdb.set_trace()
+        ipdb.set_trace()

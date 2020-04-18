@@ -111,10 +111,10 @@ class SawyerLift(SawyerEnv):
             self.placement_initializer = placement_initializer
         else:
             self.placement_initializer = UniformRandomSampler(
-                #x_range=[-0.03, 0.03],
-                #y_range=[-0.03, 0.03],
-                x_range=[0.2, 0.21],
-                y_range=[0.2, 0.21],
+                x_range=[-0.03, 0.03],
+                y_range=[-0.03, 0.03],
+                #x_range=[-0.3, 0.3],
+                #y_range=[-0.3, 0.3],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -353,9 +353,12 @@ class SawyerLift(SawyerEnv):
 
 
 if __name__ == '__main__':
-    import pdb
+    import ipdb
     import cv2
     import os
+    import math
+    import pcl
+    import robosuite.utils.transform_utils as T
 
 
     env = SawyerLift(has_renderer=True,
@@ -375,11 +378,51 @@ if __name__ == '__main__':
         cv2.imshow('depth', depth)
         cv2.waitKey(100)
 
-        lower = np.array([80, 100, 100], dtype='uint8')  # h, s, v
+        lower = np.array([100, 150, 150], dtype='uint8')  # h, s, v
         upper = np.array([124, 255, 255], dtype='uint8')
         hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower, upper)
         cv2.imshow('mask', mask)
         cv2.waitKey(100)
+        
+        #x = np.arange(env.camera_width) - (env.camera_width - 1) / 2
+        x = np.arange(env.camera_width) - env.camera_width / 2
+        x = np.tile(x, (env.camera_height, 1))
+        y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
+        y = np.tile(y, (1, env.camera_width))
+        
+        cam_id = env.sim.model.camera_name2id(env.camera_name)
+        fovy = env.sim.model.cam_fovy[cam_id]
+        cam_pos = env.sim.model.cam_pos[cam_id]
+        cam_quat = env.sim.model.cam_quat[cam_id]
+        cam_mat = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
+        # can directly get from 
+        # cam_mat = env.sim.model.cam_mat0[cam_id]
+        
+        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
 
-        pdb.set_trace()
+        #f *= 0.1
+        #depth *= 2.7
+
+        x = x * depth / f
+        y = y * depth / f
+
+        obj_index = mask > 0
+        obj_x = x[obj_index][np.newaxis,:]
+        obj_y = -y[obj_index][np.newaxis,:]
+        obj_z = -depth[obj_index][np.newaxis,:]
+        obj_points = np.concatenate((obj_x, obj_y, obj_z), axis=0)
+
+        # transform
+        obj_points = cam_mat[:3, :3].dot(obj_points) + cam_mat[:3, 3:4]
+        obj_points = obj_points.T
+
+
+        #colors = np.ones((obj_points.shape[0], 1)) * 255
+        #points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        #cloud = pcl.PointCloud_PointXYZRGB(points)
+        #pcl.save(cloud, '../../model/cube.pcd')
+
+
+        cube_pos = env.sim.data.get_geom_xpos('cube')
+        ipdb.set_trace()

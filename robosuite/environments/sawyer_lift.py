@@ -366,7 +366,25 @@ if __name__ == '__main__':
                      #camera_name='birdview')
                      #camera_name='frontview')
                      camera_name='agentview')
+
+    rgba_color = {
+        'blue':[0, 0, 255, 1],  # 120,255,255
+        'green':[0, 255, 0, 1],  # 60,255,255
+        'red':[255, 0, 0, 1], # 0, 255,255
+        'yellow':[255,255,0, 1],  # 30,255,255
+    }
+    hsv_range = {
+        'blue': [[115,150,150],[125,255,255]]  , # 120,255,255
+        'green': [[55 ,150,150],[65 ,255,255]] ,  # 60,255,255
+        'red': [[0  ,150,150],[10 ,255,255]]   ,# 0, 255,255
+        'yellow': [[25 ,150,150],[35 ,255,255]],   # 30,255,255
+
+    }
+
+    color_type = 'blue'
     while True:
+        lower, upper = np.array(hsv_range[color_type])
+        env.sim.model.geom_rgba[44,:] = rgba_color[color_type]
         env.render()
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
@@ -378,8 +396,6 @@ if __name__ == '__main__':
         cv2.imshow('depth', depth)
         cv2.waitKey(100)
 
-        lower = np.array([100, 150, 150], dtype='uint8')  # h, s, v
-        upper = np.array([124, 255, 255], dtype='uint8')
         hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower, upper)
         cv2.imshow('mask', mask)
@@ -426,3 +442,13 @@ if __name__ == '__main__':
 
         cube_pos = env.sim.data.get_geom_xpos('cube')
         ipdb.set_trace()
+
+
+"""
+color:
+refer to https://www.cnblogs.com/klchang/p/6784856.html
+blue: rgba [0, 0, 255, 1], hsv[[115,150,150],[125,255,255]]   # 120,255,255
+green:rbga [0, 255, 0, 1], hsv[[55 ,150,150],[65 ,255,255]]   # 60,255,255
+red:  rgba [255, 0, 0, 1], hsv[[0  ,150,150],[10 ,255,255]]   # 0, 255,255
+yellow:rgba[255,255,0, 1], hsv[[25 ,150,150],[35 ,255,255]]   # 30,255,255
+"""

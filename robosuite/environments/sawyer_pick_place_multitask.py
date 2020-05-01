@@ -22,10 +22,8 @@ from robosuite.models.objects import (
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import PickPlaceTask, UniformRandomSampler
 
-from ipdb import set_trace as pdb
 
-
-class SawyerPickPlace(SawyerEnv):
+class SawyerPickPlaceMultiTask(SawyerEnv):
     def __init__(
         self,
         gripper_type="TwoFingerGripper",
@@ -50,6 +48,9 @@ class SawyerPickPlace(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        multi_task_mode=True,
+        reset_color=True,
+        with_target=True,
     ):
         """
         Args:
@@ -123,6 +124,12 @@ class SawyerPickPlace(SawyerEnv):
             camera_width (int): width of camera frame.
 
             camera_depth (bool): True if rendering RGB-D, and RGB otherwise.
+
+            multi_task_mode (bool): True if divide the whole task into two subtask (pick, place).
+
+            reset_color (bool): True if remove the texture of objects and reset their color
+
+            with_target (bool): True if set a specific target object
         """
 
         # task settings
@@ -149,6 +156,9 @@ class SawyerPickPlace(SawyerEnv):
         # whether to use ground-truth object states
         self.use_object_obs = use_object_obs
 
+        # reset color
+        self.reset_color = reset_color
+
         super().__init__(
             gripper_type=gripper_type,
             gripper_visualization=gripper_visualization,
@@ -169,6 +179,13 @@ class SawyerPickPlace(SawyerEnv):
 
         # reward configuration
         self.reward_shaping = reward_shaping
+
+        # multitask mode
+        self.multi_task_mode = multi_task_mode
+        self.current_task = None
+
+        # set target object
+        self.with_target = with_target
 
         # information of objects
         self.object_names = list(self.mujoco_objects.keys())
@@ -236,7 +253,36 @@ class SawyerPickPlace(SawyerEnv):
         self.bin_pos = string_to_array(self.model.bin2_body.get("pos"))
         self.bin_size = self.model.bin_size
 
-        pdb()
+        if self.reset_color:
+            self._setup_color()
+
+    def _setup_color(self):
+        colors = ['red', 'green', 'blue', 'yellow']
+        color_rgba = {
+            'red':   [3, 0, 0, 1],  # 0, 255,255
+            'green': [0, 3, 0, 1],  # 60,255,255
+            'blue':  [0, 0, 3, 1],  # 120,255,255
+            'yellow':[3, 3, 0, 1],  # 30,255,255
+        }
+        self.object_color = OrderedDict(zip(self.mujoco_objects.keys(), colors))
+        for obj_name, color in self.object_color.items():
+            ## set after model loaded
+            #geom_id = self.sim.model.geom_name2id(obj)
+            #self.sim.model.geom_rgba[geom_id, :] = color_rgba[color]
+            #self.sim.model.geom_matid[geom_id] = -1   # unset material
+
+            # set before model loaded by MjSim
+            #obj_visual = self.mujoco_objects[obj_name].worldbody.find("body/body[@name='visual']")
+            #geoms = obj_visual.findall('geom')  # include 2 groups
+            ## TODO: decide which group to set
+            #for geom in geoms:
+            #    geom.set('material_tmp', geom.get('material'))
+            #    geom.attrib.pop('material')
+            #    geom.set('rgba', ' '.join(map(str, color_rgba[color])))
+            
+            geom = self.model.worldbody.find("body[@name='{}']/geom".format(obj_name))
+            geom.attrib.pop('material')
+            geom.set('rgba', ' '.join(map(str, color_rgba[color])))
 
     def clear_objects(self, obj):
         """
@@ -302,6 +348,22 @@ class SawyerPickPlace(SawyerEnv):
         elif self.single_object_mode == 2:
             self.obj_to_use = (self.item_names[self.object_id] + "{}").format(0)
             self.clear_objects(self.obj_to_use)
+
+        if self.multi_task_mode:
+            self.current_task = 'pick'
+
+        if self.with_target:
+            self._set_target_object()
+
+    def _set_target_object(self):
+        # TODO: higher level strategy for target choice.
+
+        # choose by random
+        if self.single_object_mode == 0:
+            self.obj_to_use = (random.choice(self.item_names) + "{}").format(0)
+
+        if self.reset_color:
+            self.target_color = self.object_color[self.obj_to_use]
 
     def reward(self, action=None):
         # compute sparse rewards
@@ -547,6 +609,32 @@ class SawyerPickPlace(SawyerEnv):
         # returns True if all objects are in correct bins
         return np.sum(self.objects_in_bins) == len(self.ob_inits)
 
+    def _update_current_task(self):
+        #TODO
+        pass
+
+    def _check_picked(self):
+        #TODO
+        pass
+
+    def _reward_with_target(self):
+        #TODO
+        pass
+
+    def _reward_without_target(self):
+        #TODO
+        pass
+
+    def _reward_pick(self):
+        #TODO
+        pass
+
+    def _reward_place(self):
+        #TODO
+        # notice to set picked object before calculating reward
+        # notice reward for target object dropped
+        pass
+
     def _gripper_visualization(self):
         """
         Do any needed visualization here. Overrides superclass implementations.
@@ -578,7 +666,7 @@ class SawyerPickPlace(SawyerEnv):
             self.sim.model.site_rgba[self.eef_site_id] = rgba
 
 
-class SawyerPickPlaceSingle(SawyerPickPlace):
+class SawyerPickPlaceSingleMultiTask(SawyerPickPlaceMultiTask):
     """
     Easier version of task - place one object into its bin.
     A new object is sampled on every reset.
@@ -589,7 +677,7 @@ class SawyerPickPlaceSingle(SawyerPickPlace):
         super().__init__(single_object_mode=1, **kwargs)
 
 
-class SawyerPickPlaceMilk(SawyerPickPlace):
+class SawyerPickPlaceMilkMultiTask(SawyerPickPlaceMultiTask):
     """
     Easier version of task - place one milk into its bin.
     """
@@ -601,7 +689,7 @@ class SawyerPickPlaceMilk(SawyerPickPlace):
         super().__init__(single_object_mode=2, object_type="milk", **kwargs)
 
 
-class SawyerPickPlaceBread(SawyerPickPlace):
+class SawyerPickPlaceBreadMultiTask(SawyerPickPlaceMultiTask):
     """
     Easier version of task - place one bread into its bin.
     """
@@ -613,7 +701,7 @@ class SawyerPickPlaceBread(SawyerPickPlace):
         super().__init__(single_object_mode=2, object_type="bread", **kwargs)
 
 
-class SawyerPickPlaceCereal(SawyerPickPlace):
+class SawyerPickPlaceCerealMultiTask(SawyerPickPlaceMultiTask):
     """
     Easier version of task - place one cereal into its bin.
     """
@@ -625,7 +713,7 @@ class SawyerPickPlaceCereal(SawyerPickPlace):
         super().__init__(single_object_mode=2, object_type="cereal", **kwargs)
 
 
-class SawyerPickPlaceCan(SawyerPickPlace):
+class SawyerPickPlaceCanMultiTask(SawyerPickPlaceMultiTask):
     """
     Easier version of task - place one can into its bin.
     """
@@ -643,7 +731,7 @@ if __name__ == '__main__':
     import os
 
 
-    env = SawyerPickPlace(has_renderer=True,
+    env = SawyerPickPlaceMultiTask(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
@@ -651,7 +739,7 @@ if __name__ == '__main__':
                      camera_name='agentview')
 
 
-    env.sim.model.geom_matid[67:71] = -1   # set material to -1
+    #env.sim.model.geom_matid[67:71] = -1   # set material to -1
     objs = ['Milk0', 'Can0', 'Bread0', 'Cereal0']
     color_types = ['blue', 'green', 'red', 'yellow']
     ids = dict([(obj,env.sim.model.geom_name2id(obj)) for obj in objs])
@@ -671,15 +759,15 @@ if __name__ == '__main__':
 
     }
 
-    for obj in objs:
-        env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
+    #for obj in objs:
+    #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
 
     color_type = 'blue'
 
     while True:
-        env.sim.model.geom_matid[67:71] = -1   # set material to -1
-        for obj in objs:
-            env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
+        #env.sim.model.geom_matid[67:71] = -1   # set material to -1
+        #for obj in objs:
+        #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
         env.render()
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
@@ -698,8 +786,5 @@ if __name__ == '__main__':
         cv2.waitKey(100)
 
         import xml.etree.ElementTree as ET
-
-
-
 
         ipdb.set_trace()

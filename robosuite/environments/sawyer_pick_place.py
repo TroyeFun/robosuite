@@ -42,7 +42,7 @@ class SawyerPickPlace(SawyerEnv):
         render_collision_mesh=False,
         render_visual_mesh=True,
         control_freq=10,
-        horizon=1000,
+        horizon=2000,
         ignore_done=False,
         camera_name="frontview",
         camera_height=256,

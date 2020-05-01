@@ -3,7 +3,6 @@
 
 import cv2
 import numpy as np
-import pcl
 from ipdb import set_trace as pdb
 
 hsv_range = {  # attention! just for uint8 image, not for float32 image
@@ -134,7 +133,9 @@ def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color):
     return pcd
 
 def save_pcd(pcd, path='../../exp/'):
+    import pcl
     rgb = np.ones((pcd.shape[0], 1)) * 255
     pcd_rgb = np.concatenate((pcd, rgb), axis=1).astype('float32')
     cloud = pcl.PointCloud_PointXYZRGB(pcd_rgb)
     pcl.save(cloud, path + 'cloud.pcd')
+

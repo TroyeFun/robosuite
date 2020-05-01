@@ -50,7 +50,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         camera_depth=False,
         multi_task_mode=True,
         reset_color=True,
-        with_target=True,
+        with_target=False,
     ):
         """
         Args:
@@ -665,65 +665,149 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
             self.sim.model.site_rgba[self.eef_site_id] = rgba
 
+"""
+Without target object
+    Single-task 
+    see sawyer_pick_place.py
+"""
+
+"""
+Without target object
+    Multi-task
+"""
 
 class SawyerPickPlaceSingleMultiTask(SawyerPickPlaceMultiTask):
-    """
-    Easier version of task - place one object into its bin.
-    A new object is sampled on every reset.
-    """
-
     def __init__(self, **kwargs):
-        assert "single_object_mode" not in kwargs, "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=1, **kwargs)
 
-
 class SawyerPickPlaceMilkMultiTask(SawyerPickPlaceMultiTask):
-    """
-    Easier version of task - place one milk into its bin.
-    """
-
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="milk", **kwargs)
 
-
 class SawyerPickPlaceBreadMultiTask(SawyerPickPlaceMultiTask):
-    """
-    Easier version of task - place one bread into its bin.
-    """
-
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="bread", **kwargs)
 
-
 class SawyerPickPlaceCerealMultiTask(SawyerPickPlaceMultiTask):
-    """
-    Easier version of task - place one cereal into its bin.
-    """
-
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="cereal", **kwargs)
 
-
 class SawyerPickPlaceCanMultiTask(SawyerPickPlaceMultiTask):
-    """
-    Easier version of task - place one can into its bin.
-    """
-
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="can", **kwargs)
 
+"""
+With target object
+    Single Task
+"""
+class SawyerPickPlaceTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=0, multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceSingleTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=1, multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceMilkTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="milk", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceBreadTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="bread", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceCerealTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="cereal", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceCanTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="can", multi_task_mode=False, with_target=True, **kwargs)
+
+"""
+With target object
+    Multi task
+"""
+
+class SawyerPickPlaceMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=0, with_target=True, **kwargs)
+
+
+class SawyerPickPlaceSingleMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=1, with_target=True, **kwargs)
+
+
+class SawyerPickPlaceMilkMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="milk", **kwargs)
+
+
+class SawyerPickPlaceBreadMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="bread", **kwargs)
+
+
+class SawyerPickPlaceCerealMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="cereal", **kwargs)
+
+
+class SawyerPickPlaceCanMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="can", **kwargs)
 
 if __name__ == '__main__':
     import ipdb

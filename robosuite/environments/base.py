@@ -327,3 +327,8 @@ class MujocoEnv(metaclass=EnvMeta):
     def close(self):
         """Do any cleanup necessary here."""
         self._destroy_viewer()
+
+
+if __name__ == '__main__':
+    print(REGISTERED_ENVS)
+    env = make('SawyerLift')

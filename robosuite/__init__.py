@@ -9,6 +9,8 @@ from robosuite.environments.sawyer_nut_assembly import SawyerNutAssembly
 from robosuite.environments.baxter_lift import BaxterLift
 from robosuite.environments.baxter_peg_in_hole import BaxterPegInHole
 
+from robosuite.environments.sawyer_pick_place_multitask import SawyerPickPlaceMultiTask
+
 __version__ = "0.2.0"
 __logo__ = """
       ;     /        ,--.

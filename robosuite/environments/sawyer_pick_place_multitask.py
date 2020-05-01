@@ -21,11 +21,11 @@ from robosuite.models.objects import (
 )
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import PickPlaceTask, UniformRandomSampler
+from robosuite.utils.visualize import color_rgba
 
 from ipdb import set_trace as pdb
 
-
-class SawyerPickPlace(SawyerEnv):
+class SawyerPickPlaceMultiTask(SawyerEnv):
     def __init__(
         self,
         gripper_type="TwoFingerGripper",
@@ -44,12 +44,15 @@ class SawyerPickPlace(SawyerEnv):
         render_collision_mesh=False,
         render_visual_mesh=True,
         control_freq=10,
-        horizon=2000,
+        horizon=1000,
         ignore_done=False,
         camera_name="frontview",
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        multi_task_mode=True,
+        reset_color=True,
+        with_target=False,
     ):
         """
         Args:
@@ -123,6 +126,12 @@ class SawyerPickPlace(SawyerEnv):
             camera_width (int): width of camera frame.
 
             camera_depth (bool): True if rendering RGB-D, and RGB otherwise.
+
+            multi_task_mode (bool): True if divide the whole task into two subtask (pick, place).
+
+            reset_color (bool): True if remove the texture of objects and reset their color
+
+            with_target (bool): True if set a specific target object
         """
 
         # task settings
@@ -148,6 +157,16 @@ class SawyerPickPlace(SawyerEnv):
 
         # whether to use ground-truth object states
         self.use_object_obs = use_object_obs
+
+        # reset color
+        self.reset_color = reset_color
+
+        # multitask mode
+        self.multi_task_mode = multi_task_mode
+        self.current_task = None
+
+        # set target object
+        self.with_target = with_target
 
         super().__init__(
             gripper_type=gripper_type,
@@ -236,6 +255,31 @@ class SawyerPickPlace(SawyerEnv):
         self.bin_pos = string_to_array(self.model.bin2_body.get("pos"))
         self.bin_size = self.model.bin_size
 
+        if self.reset_color:
+            self._setup_color()
+
+    def _setup_color(self):
+        colors = ['purple', 'green', 'blue', 'yellow']
+        self.object_color = OrderedDict(zip(self.mujoco_objects.keys(), colors))
+        for obj_name, color in self.object_color.items():
+            ## set after model loaded
+            #geom_id = self.sim.model.geom_name2id(obj)
+            #self.sim.model.geom_rgba[geom_id, :] = color_rgba[color]
+            #self.sim.model.geom_matid[geom_id] = -1   # unset material
+
+            # set before model loaded by MjSim
+            #obj_visual = self.mujoco_objects[obj_name].worldbody.find("body/body[@name='visual']")
+            #geoms = obj_visual.findall('geom')  # include 2 groups
+            ## TODO: decide which group to set
+            #for geom in geoms:
+            #    geom.set('material_tmp', geom.get('material'))
+            #    geom.attrib.pop('material')
+            #    geom.set('rgba', ' '.join(map(str, color_rgba[color])))
+            
+            geom = self.model.worldbody.find("body[@name='{}']/geom".format(obj_name))
+            geom.attrib.pop('material')
+            geom.set('rgba', ' '.join(map(str, color_rgba[color])))
+
     def clear_objects(self, obj):
         """
         Clears objects with name @obj out of the task space. This is useful
@@ -300,6 +344,22 @@ class SawyerPickPlace(SawyerEnv):
         elif self.single_object_mode == 2:
             self.obj_to_use = (self.item_names[self.object_id] + "{}").format(0)
             self.clear_objects(self.obj_to_use)
+
+        if self.multi_task_mode:
+            self.current_task = 'pick'
+
+        if self.with_target:
+            self._set_target_object()
+
+    def _set_target_object(self):
+        # TODO: higher level strategy for target choice.
+
+        # choose by random
+        if self.single_object_mode == 0:
+            self.obj_to_use = (random.choice(self.item_names) + "{}").format(0)
+
+        if self.reset_color:
+            self.target_color = self.object_color[self.obj_to_use]
 
     def reward(self, action=None):
         # compute sparse rewards
@@ -545,6 +605,32 @@ class SawyerPickPlace(SawyerEnv):
         # returns True if all objects are in correct bins
         return np.sum(self.objects_in_bins) == len(self.ob_inits)
 
+    def _update_current_task(self):
+        #TODO
+        pass
+
+    def _check_picked(self):
+        #TODO
+        pass
+
+    def _reward_with_target(self):
+        #TODO
+        pass
+
+    def _reward_without_target(self):
+        #TODO
+        pass
+
+    def _reward_pick(self):
+        #TODO
+        pass
+
+    def _reward_place(self):
+        #TODO
+        # notice to set picked object before calculating reward
+        # notice reward for target object dropped
+        pass
+
     def _gripper_visualization(self):
         """
         Do any needed visualization here. Overrides superclass implementations.
@@ -575,73 +661,159 @@ class SawyerPickPlace(SawyerEnv):
 
             self.sim.model.site_rgba[self.eef_site_id] = rgba
 
+"""
+Without target object
+    Single-task 
+    see sawyer_pick_place.py
+"""
 
-class SawyerPickPlaceSingle(SawyerPickPlace):
-    """
-    Easier version of task - place one object into its bin.
-    A new object is sampled on every reset.
-    """
+"""
+Without target object
+    Multi-task
+"""
 
+class SawyerPickPlaceSingleMultiTask(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):
-        assert "single_object_mode" not in kwargs, "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=1, **kwargs)
 
-
-class SawyerPickPlaceMilk(SawyerPickPlace):
-    """
-    Easier version of task - place one milk into its bin.
-    """
-
+class SawyerPickPlaceMilkMultiTask(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="milk", **kwargs)
 
-
-class SawyerPickPlaceBread(SawyerPickPlace):
-    """
-    Easier version of task - place one bread into its bin.
-    """
-
+class SawyerPickPlaceBreadMultiTask(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="bread", **kwargs)
 
-
-class SawyerPickPlaceCereal(SawyerPickPlace):
-    """
-    Easier version of task - place one cereal into its bin.
-    """
-
+class SawyerPickPlaceCerealMultiTask(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="cereal", **kwargs)
 
-
-class SawyerPickPlaceCan(SawyerPickPlace):
-    """
-    Easier version of task - place one can into its bin.
-    """
-
+class SawyerPickPlaceCanMultiTask(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):
-        assert (
-            "single_object_mode" not in kwargs and "object_type" not in kwargs
-        ), "invalid set of arguments"
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=2, object_type="can", **kwargs)
 
+"""
+With target object
+    Single Task
+"""
+class SawyerPickPlaceTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=0, multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceSingleTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=1, multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceMilkTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="milk", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceBreadTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="bread", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceCerealTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="cereal", multi_task_mode=False, with_target=True, **kwargs)
+
+class SawyerPickPlaceCanTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, object_type="can", multi_task_mode=False, with_target=True, **kwargs)
+
+"""
+With target object
+    Multi task
+"""
+
+class SawyerPickPlaceMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=0, with_target=True, **kwargs)
+
+
+class SawyerPickPlaceSingleMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=1, with_target=True, **kwargs)
+
+
+class SawyerPickPlaceMilkMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="milk", **kwargs)
+
+
+class SawyerPickPlaceBreadMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="bread", **kwargs)
+
+
+class SawyerPickPlaceCerealMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="cereal", **kwargs)
+
+
+class SawyerPickPlaceCanMultiTaskTarget(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'object_type', 'multi_task_mode', 'with_target']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=2, with_target=True, object_type="can", **kwargs)
 
 if __name__ == '__main__':
     import ipdb
     import cv2
     import os
+    import pcl
+    import math
 
 
-    env = SawyerPickPlace(has_renderer=True,
+    env = SawyerPickPlaceTarget(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
@@ -649,7 +821,7 @@ if __name__ == '__main__':
                      camera_name='agentview')
 
 
-    env.sim.model.geom_matid[67:71] = -1   # set material to -1
+    #env.sim.model.geom_matid[67:71] = -1   # set material to -1
     objs = ['Milk0', 'Can0', 'Bread0', 'Cereal0']
     color_types = ['blue', 'green', 'purple', 'yellow']
     ids = dict([(obj,env.sim.model.geom_name2id(obj)) for obj in objs])
@@ -671,25 +843,24 @@ if __name__ == '__main__':
 
     }
 
-    for obj in objs:
-        env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
+    #for obj in objs:
+    #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
 
     color_type = 'blue'
 
     while True:
-        env.sim.model.geom_matid[67:71] = -1   # set material to -1
-        for obj in objs:
-            env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
+        #env.sim.model.geom_matid[67:71] = -1   # set material to -1
+        #for obj in objs:
+        #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
         env.render()
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
-        rgb = color
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
         depth = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('color', color)
         cv2.waitKey(100)
-        cv2.imshow('depth', depth)
+        cv2.imshow('depth', np.tile(depth[:,:,np.newaxis], (1,1,3)))
         cv2.waitKey(100)
 
         lower, upper = np.array(hsv_range[color_type])
@@ -698,6 +869,43 @@ if __name__ == '__main__':
         cv2.imshow('mask', mask)
         cv2.waitKey(100)
 
-        import xml.etree.ElementTree as ET
+        x = np.arange(env.camera_width) - env.camera_width / 2
+        x = np.tile(x, (env.camera_height, 1))
+        y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
+        y = np.tile(y, (1, env.camera_width))
+        
+        cam_id = env.sim.model.camera_name2id(env.camera_name)
+        fovy = env.sim.model.cam_fovy[cam_id]
+        cam_pos = env.sim.model.cam_pos[cam_id]
+        cam_quat = env.sim.model.cam_quat[cam_id]
+        cam_mat0 = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
+        # can directly get from 
+        cam_mat = env.sim.model.cam_mat0[cam_id].reshape(3,3)
+        cam_pos = cam_pos.reshape(3,1)
+        
+        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
+
+        #f *= 0.1
+        #depth *= 2.7
+
+        x = x * depth / f
+        y = y * depth / f
+
+        obj_index = mask > 0
+        obj_x = x[obj_index][np.newaxis,:]
+        obj_y = -y[obj_index][np.newaxis,:]
+        obj_z = -depth[obj_index][np.newaxis,:]
+        obj_points = np.concatenate((obj_x, obj_y, obj_z), axis=0)
+
+        # transform
+        obj_points = cam_mat.dot(obj_points) + cam_pos
+        obj_points = obj_points.T
+
+
+        colors = np.ones((obj_points.shape[0], 1)) * 255
+        points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        cloud = pcl.PointCloud_PointXYZRGB(points)
+        pcl.save(cloud, '../../exp/cloud.pcd')
+
 
         ipdb.set_trace()

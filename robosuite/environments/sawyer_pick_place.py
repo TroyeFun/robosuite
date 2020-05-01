@@ -651,7 +651,7 @@ if __name__ == '__main__':
 
     env.sim.model.geom_matid[67:71] = -1   # set material to -1
     objs = ['Milk0', 'Can0', 'Bread0', 'Cereal0']
-    color_types = ['blue', 'green', 'red', 'yellow']
+    color_types = ['blue', 'green', 'purple', 'yellow']
     ids = dict([(obj,env.sim.model.geom_name2id(obj)) for obj in objs])
     obj_colors = dict(zip(objs, color_types))
     
@@ -660,12 +660,14 @@ if __name__ == '__main__':
         'green': [0, 3, 0, 1],  # 60,255,255
         'red':   [3, 0, 0, 1], # 0, 255,255
         'yellow':[3, 3, 0, 1],  # 30,255,255
+        'purple':[3, 0, 3, 1],  # 150,255,255
     }
     hsv_range = {
         'blue':   [[115,150,150],[125,255,255]],  # 120,255,255
         'green':  [[55 ,150,150],[65 ,255,255]],  # 60,255,255
         'red':    [[0  ,150,150],[10 ,255,255]],  # 0, 255,255
         'yellow': [[25 ,150,150],[35 ,255,255]],  # 30,255,255
+        'purple': [[145,150,150],[155,255,255]],  # 150,255,255
 
     }
 
@@ -681,6 +683,7 @@ if __name__ == '__main__':
         env.render()
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
+        rgb = color
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
         depth = cv2.flip(depth, 0) # horizontal flip
@@ -696,8 +699,5 @@ if __name__ == '__main__':
         cv2.waitKey(100)
 
         import xml.etree.ElementTree as ET
-
-
-
 
         ipdb.set_trace()

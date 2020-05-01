@@ -21,7 +21,9 @@ from robosuite.models.objects import (
 )
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import PickPlaceTask, UniformRandomSampler
+from robosuite.utils.visualize import color_rgba
 
+from ipdb import set_trace as pdb
 
 class SawyerPickPlaceMultiTask(SawyerEnv):
     def __init__(
@@ -159,6 +161,13 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         # reset color
         self.reset_color = reset_color
 
+        # multitask mode
+        self.multi_task_mode = multi_task_mode
+        self.current_task = None
+
+        # set target object
+        self.with_target = with_target
+
         super().__init__(
             gripper_type=gripper_type,
             gripper_visualization=gripper_visualization,
@@ -179,13 +188,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         # reward configuration
         self.reward_shaping = reward_shaping
-
-        # multitask mode
-        self.multi_task_mode = multi_task_mode
-        self.current_task = None
-
-        # set target object
-        self.with_target = with_target
 
         # information of objects
         self.object_names = list(self.mujoco_objects.keys())
@@ -257,13 +259,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self._setup_color()
 
     def _setup_color(self):
-        colors = ['red', 'green', 'blue', 'yellow']
-        color_rgba = {
-            'red':   [3, 0, 0, 1],  # 0, 255,255
-            'green': [0, 3, 0, 1],  # 60,255,255
-            'blue':  [0, 0, 3, 1],  # 120,255,255
-            'yellow':[3, 3, 0, 1],  # 30,255,255
-        }
+        colors = ['purple', 'green', 'blue', 'yellow']
         self.object_color = OrderedDict(zip(self.mujoco_objects.keys(), colors))
         for obj_name, color in self.object_color.items():
             ## set after model loaded
@@ -813,9 +809,11 @@ if __name__ == '__main__':
     import ipdb
     import cv2
     import os
+    import pcl
+    import math
 
 
-    env = SawyerPickPlaceMultiTask(has_renderer=True,
+    env = SawyerPickPlaceTarget(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
@@ -825,7 +823,7 @@ if __name__ == '__main__':
 
     #env.sim.model.geom_matid[67:71] = -1   # set material to -1
     objs = ['Milk0', 'Can0', 'Bread0', 'Cereal0']
-    color_types = ['blue', 'green', 'red', 'yellow']
+    color_types = ['blue', 'green', 'purple', 'yellow']
     ids = dict([(obj,env.sim.model.geom_name2id(obj)) for obj in objs])
     obj_colors = dict(zip(objs, color_types))
     
@@ -834,12 +832,14 @@ if __name__ == '__main__':
         'green': [0, 3, 0, 1],  # 60,255,255
         'red':   [3, 0, 0, 1], # 0, 255,255
         'yellow':[3, 3, 0, 1],  # 30,255,255
+        'purple':[3, 0, 3, 1],  # 150,255,255
     }
     hsv_range = {
         'blue':   [[115,150,150],[125,255,255]],  # 120,255,255
         'green':  [[55 ,150,150],[65 ,255,255]],  # 60,255,255
         'red':    [[0  ,150,150],[10 ,255,255]],  # 0, 255,255
         'yellow': [[25 ,150,150],[35 ,255,255]],  # 30,255,255
+        'purple': [[145,150,150],[155,255,255]],  # 150,255,255
 
     }
 
@@ -860,7 +860,7 @@ if __name__ == '__main__':
         depth = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('color', color)
         cv2.waitKey(100)
-        cv2.imshow('depth', depth)
+        cv2.imshow('depth', np.tile(depth[:,:,np.newaxis], (1,1,3)))
         cv2.waitKey(100)
 
         lower, upper = np.array(hsv_range[color_type])
@@ -869,6 +869,43 @@ if __name__ == '__main__':
         cv2.imshow('mask', mask)
         cv2.waitKey(100)
 
-        import xml.etree.ElementTree as ET
+        x = np.arange(env.camera_width) - env.camera_width / 2
+        x = np.tile(x, (env.camera_height, 1))
+        y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
+        y = np.tile(y, (1, env.camera_width))
+        
+        cam_id = env.sim.model.camera_name2id(env.camera_name)
+        fovy = env.sim.model.cam_fovy[cam_id]
+        cam_pos = env.sim.model.cam_pos[cam_id]
+        cam_quat = env.sim.model.cam_quat[cam_id]
+        cam_mat0 = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
+        # can directly get from 
+        cam_mat = env.sim.model.cam_mat0[cam_id].reshape(3,3)
+        cam_pos = cam_pos.reshape(3,1)
+        
+        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
+
+        #f *= 0.1
+        #depth *= 2.7
+
+        x = x * depth / f
+        y = y * depth / f
+
+        obj_index = mask > 0
+        obj_x = x[obj_index][np.newaxis,:]
+        obj_y = -y[obj_index][np.newaxis,:]
+        obj_z = -depth[obj_index][np.newaxis,:]
+        obj_points = np.concatenate((obj_x, obj_y, obj_z), axis=0)
+
+        # transform
+        obj_points = cam_mat.dot(obj_points) + cam_pos
+        obj_points = obj_points.T
+
+
+        colors = np.ones((obj_points.shape[0], 1)) * 255
+        points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        cloud = pcl.PointCloud_PointXYZRGB(points)
+        pcl.save(cloud, '../../exp/cloud.pcd')
+
 
         ipdb.set_trace()

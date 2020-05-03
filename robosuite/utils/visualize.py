@@ -5,6 +5,10 @@ import cv2
 import numpy as np
 from ipdb import set_trace as pdb
 
+"""
+rgb-hsv transformation: 
+refer to https://www.cnblogs.com/klchang/p/6784856.html
+"""
 hsv_range = {  # attention! just for uint8 image, not for float32 image
     'blue':   [[115,150,150],[125,255,255]],  # 120,255,255
     'green':  [[55 ,150,150],[65 ,255,255]],  # 60,255,255

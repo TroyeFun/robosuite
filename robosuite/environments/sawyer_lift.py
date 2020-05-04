@@ -5,9 +5,16 @@ from robosuite.utils.transform_utils import convert_quat
 from robosuite.environments.sawyer import SawyerEnv
 
 from robosuite.models.arenas import TableArena
-from robosuite.models.objects import BoxObject
+from robosuite.models.objects import (
+    BoxObject, 
+    MilkObject,
+    BreadObject,
+    CerealObject,
+    CanObject,
+)
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
+import random
 
 
 class SawyerLift(SawyerEnv):
@@ -37,6 +44,7 @@ class SawyerLift(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        object_choice='cube',
     ):
         """
         Args:
@@ -94,6 +102,8 @@ class SawyerLift(SawyerEnv):
             camera_width (int): width of camera frame.
 
             camera_depth (bool): True if rendering RGB-D, and RGB otherwise.
+
+            object_choice (str): ['cube', 'milk', 'cereal', 'bread', 'can', 'random']
         """
 
         # settings for table top
@@ -118,6 +128,18 @@ class SawyerLift(SawyerEnv):
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
+        self.object_choice = object_choice
+
+        # [cls, kwargs]
+        self.object_params = {
+            'cube': [BoxObject, {'size_min':[0.020, 0.020, 0.020], 'size_max':[0.022, 0.022, 0.022], 'rgba':[0, 0, 255, 1]}],
+            'milk': [MilkObject, {}],
+            'bread': [BreadObject, {}],
+            'cereal': [CerealObject, {}],
+            'can': [CanObject, {}],
+        }
+        assert self.object_choice in self.object_params or self.object_choise == 'random', \
+                'object_choice must in {}'.format(list(self.object_params.keys())+['random'])
 
         super().__init__(
             gripper_type=gripper_type,
@@ -154,13 +176,10 @@ class SawyerLift(SawyerEnv):
         # The sawyer robot has a pedestal, we want to align it with the table
         self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
 
+        object_cls, object_args = self.object_params[self.object_type]
+        object = object_cls(**object_args)
         # initialize objects of interest
-        cube = BoxObject(
-            size_min=[0.020, 0.020, 0.020],  # [0.015, 0.015, 0.015],
-            size_max=[0.022, 0.022, 0.022],  # [0.018, 0.018, 0.018])
-            rgba=[0, 0, 255, 1],
-        )
-        self.mujoco_objects = OrderedDict([("cube", cube)])
+        self.mujoco_objects = OrderedDict([("cube", object)])
 
         # task includes arena, robot, and objects of interest
         self.model = TableTopTask(
@@ -191,6 +210,11 @@ class SawyerLift(SawyerEnv):
         """
         Resets simulation internal configurations.
         """
+        if self.object_choice == 'random':
+            self.object_type = random.choice(self.object_params.keys())
+        else:
+            self.object_type = self.object_choice
+
         super()._reset_internal()
 
         # reset positions of objects

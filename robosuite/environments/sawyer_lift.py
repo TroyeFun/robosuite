@@ -138,7 +138,7 @@ class SawyerLift(SawyerEnv):
             'cereal': [CerealObject, {}],
             'can': [CanObject, {}],
         }
-        assert self.object_choice in self.object_params or self.object_choise == 'random', \
+        assert self.object_choice in self.object_params or self.object_choice == 'random', \
                 'object_choice must in {}'.format(list(self.object_params.keys())+['random'])
 
         super().__init__(
@@ -211,7 +211,7 @@ class SawyerLift(SawyerEnv):
         Resets simulation internal configurations.
         """
         if self.object_choice == 'random':
-            self.object_type = random.choice(self.object_params.keys())
+            self.object_type = random.choice(list(self.object_params.keys()))
         else:
             self.object_type = self.object_choice
 
@@ -375,6 +375,12 @@ class SawyerLift(SawyerEnv):
 
             self.sim.model.site_rgba[self.eef_site_id] = rgba
 
+class SawyerLiftRandom(SawyerLift):
+
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'random'
+        super().__init__(**kwargs)
+
 
 if __name__ == '__main__':
     import ipdb
@@ -385,7 +391,7 @@ if __name__ == '__main__':
     import robosuite.utils.transform_utils as T
 
 
-    env = SawyerLift(has_renderer=True,
+    env = SawyerLiftRandom(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')
@@ -406,10 +412,13 @@ if __name__ == '__main__':
     }
 
     color_type = 'blue'
+    step = 0
     while True:
         lower, upper = np.array(hsv_range[color_type])
-        env.sim.model.geom_rgba[44,:] = rgba_color[color_type]
+        #env.sim.model.geom_rgba[44,:] = rgba_color[color_type]
         env.render()
+        """
+
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
@@ -465,8 +474,13 @@ if __name__ == '__main__':
 
 
         cube_pos = env.sim.data.get_geom_xpos('cube')
-        ipdb.set_trace()
+        """
 
+        if step % 100 == 0:
+            env.reset()
+            print(env.object_type)
+        step += 1
+        
 
 """
 color:

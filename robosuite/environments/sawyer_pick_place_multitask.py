@@ -361,13 +361,20 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         if self.reset_color:
             self.target_color = self.object_color[self.obj_to_use]
 
+        self.object_id = self.object_to_id[self.obj_to_use.strip('0').lower()]
+        self.target_body_id = self.obj_body_id(self.obj_to_use)
+        self.target_geom_id = self.obj_geom_id(self.obj_to_use)
+
     def reward(self, action=None):
         # compute sparse rewards
         self._check_success()
         reward = np.sum(self.objects_in_bins)
 
+        if self.multi_task_mode:
+            self._update_current_task()
+            reward += self._reward_with_target()
         # add in shaped rewards
-        if self.reward_shaping:
+        elif self.reward_shaping: 
             staged_rewards = self.staged_rewards()
             reward += max(staged_rewards)
         return reward
@@ -594,8 +601,10 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             obj_pos = self.sim.data.body_xpos[self.obj_body_id[obj_str]]
             dist = np.linalg.norm(gripper_site_pos - obj_pos)
             r_reach = 1 - np.tanh(10.0 * dist)
+            
+            # all in bin, but why r_reach < 0.6 (dist > 0.042)?
             self.objects_in_bins[i] = int(
-                (not self.not_in_bin(obj_pos, i)) and r_reach < 0.6
+                (not self.not_in_bin(obj_pos, i)) and r_reach < 0.6  
             )
 
         # returns True if a single object is in the correct bin
@@ -606,30 +615,127 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         return np.sum(self.objects_in_bins) == len(self.ob_inits)
 
     def _update_current_task(self):
-        #TODO
-        pass
+        if not self._check_picked():
+            self.current_task == 'pick'
+        else:
+            self.current_task = 'place'
 
     def _check_picked(self):
-        #TODO
-        pass
+        """
+        Returns True if target object has been picked and lift.
+        """
+        target_height = self.sim.data.body_xpos[self.target_body_id][2]
+        table_height = self.table_full_size[2]
+
+        # target is higher than the table top above a margin
+        return target_height > table_height + 0.04
+
+    def _check_placed(self):
+        gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]
+        obj_pos = self.sim.data.body_xpos[self.target_body_id]
+        dist = np.linalg.norm(gripper_site_pos - obj_pos)
+        r_reach = 1 - np.tanh(10.0 * dist)
+        object_in_bin = int(
+            (not self.not_in_bin(obj_pos, self.object_id)) and r_reach < 0.6
+        )
+
+        return object_in_bin > 0
 
     def _reward_with_target(self):
         #TODO
-        pass
+        if self.current_task == 'pick':
+            return self._reward_pick()
+        elif self.current_task == 'place':
+            return self._reward_place()
+        else:
+            raise NotImplementedError
 
     def _reward_without_target(self):
         #TODO
         pass
 
     def _reward_pick(self):
-        #TODO
-        pass
+        #TODO targetless mode
+        # support target mode only
+        # reaching reward
+        reward = self._check_picked()
+
+        target_pos = self.sim.data.body_xpos[self.target_body_id]
+        gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]
+        dist = np.linalg.norm(gripper_site_pos - target_pos)
+        reaching_reward = 1 - np.tanh(10.0 * dist)
+        reward += reaching_reward
+
+        # grasping reward
+        touch_left_finger = False
+        touch_right_finger = False
+        for i in range(self.sim.data.ncon):
+            c = self.sim.data.contact[i]
+            if c.geom1 in self.l_finger_geom_ids and c.geom2 == self.target_geom_id:
+                touch_left_finger = True
+            if c.geom1 == self.target_geom_id and c.geom2 in self.l_finger_geom_ids:
+                touch_left_finger = True
+            if c.geom1 in self.r_finger_geom_ids and c.geom2 == self.target_geom_id:
+                touch_right_finger = True
+            if c.geom1 == self.target_geom_id and c.geom2 in self.r_finger_geom_ids:
+                touch_right_finger = True
+        if touch_left_finger and touch_right_finger:
+            reward += 0.25
+        return reward
 
     def _reward_place(self):
         #TODO
         # notice to set picked object before calculating reward
         # notice reward for target object dropped
-        pass
+        # support target mode only
+        
+        ### hover reward for getting object above bin ###
+        grasp_mult = 0.35
+        lift_mult = 0.5
+        hover_mult = 0.7
+
+        reward = self._check_placed()
+        objs_to_reach = [self.object_id]
+        target_bin_placements = [self.target_bin_placements[self.object_id]]
+
+        ### lifting reward for picking up an object ###
+        r_lift = 0.
+        z_target = self.bin_pos[2] + 0.25
+        object_z_locs = self.sim.data.body_xpos[objs_to_reach][:, 2]
+        z_dists = np.maximum(z_target - object_z_locs, 0.)
+        r_lift = grasp_mult + (1 - np.tanh(15.0 * min(z_dists))) * (
+            lift_mult - grasp_mult
+            )
+
+        r_hover = 0
+        # segment objects into left of the bins and above the bins
+        object_xy_locs = self.sim.data.body_xpos[objs_to_reach][:, :2]
+        y_check = (
+            np.abs(object_xy_locs[:, 1] - target_bin_placements[:, 1])
+            < self.bin_size[1] / 4.
+        )
+        x_check = (
+            np.abs(object_xy_locs[:, 0] - target_bin_placements[:, 0])
+            < self.bin_size[0] / 4.
+        )
+        objects_above_bins = np.logical_and(x_check, y_check)
+        objects_not_above_bins = np.logical_not(objects_above_bins)
+        dists = np.linalg.norm(
+            target_bin_placements[:, :2] - object_xy_locs, axis=1
+        )
+        # objects to the left get r_lift added to hover reward, those on the right get max(r_lift) added (to encourage dropping)
+        r_hover_all = np.zeros(len(objs_to_reach))
+        r_hover_all[objects_above_bins] = lift_mult + (  # not reward lift
+            1 - np.tanh(10.0 * dists[objects_above_bins])
+        ) * (hover_mult - lift_mult)
+        r_hover_all[objects_not_above_bins] = r_lift + (  # reward lift
+            1 - np.tanh(10.0 * dists[objects_not_above_bins])
+        ) * (hover_mult - lift_mult)
+        r_hover = np.max(r_hover_all)
+
+        reward += r_hover
+        return reward
+
 
     def _gripper_visualization(self):
         """

@@ -505,9 +505,10 @@ if __name__ == '__main__':
         cube_pos = env.sim.data.get_geom_xpos('cube')
         """
 
-        if step % 500 == 0:
+        if step % 1000 == 0:
             env.reset()
-            print(env.object_type)
+            action = np.random.rand(8)
+            env.step(action)
         step += 1
         
 

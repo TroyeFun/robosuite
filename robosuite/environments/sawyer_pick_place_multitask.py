@@ -51,7 +51,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         camera_width=256,
         camera_depth=False,
         multi_task_mode=True,
-        reset_color=True,
+        reset_color=False,
+        #reset_color=True,
         with_target=False,
     ):
         """
@@ -143,10 +144,10 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             ), "invalid @object_type argument - choose one of {}".format(
                 list(self.object_to_id.keys())
             )
-            self.object_id = self.object_to_id[
+            self.target_id = self.object_to_id[
                 object_type
             ]  # use for convenient indexing
-        self.obj_to_use = None
+        self.target_object = None
 
         # settings for table top
         self.table_full_size = table_full_size
@@ -228,7 +229,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         ]
         self.item_names = ["Milk", "Bread", "Cereal", "Can"]
         self.item_names_org = list(self.item_names)
-        self.obj_to_use = (self.item_names[0] + "{}").format(0)
+        self.target_object = (self.item_names[0] + "{}").format(0)
 
         lst = []
         for j in range(len(self.vis_inits)):
@@ -339,11 +340,11 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         # reset positions of objects, and move objects out of the scene depending on the mode
         self.model.place_objects()
         if self.single_object_mode == 1:
-            self.obj_to_use = (random.choice(self.item_names) + "{}").format(0)
-            self.clear_objects(self.obj_to_use)
+            self.target_object = (random.choice(self.item_names) + "{}").format(0)
+            self.clear_objects(self.target_object)
         elif self.single_object_mode == 2:
-            self.obj_to_use = (self.item_names[self.object_id] + "{}").format(0)
-            self.clear_objects(self.obj_to_use)
+            self.target_object = (self.item_names[self.target_id] + "{}").format(0)
+            self.clear_objects(self.target_object)
 
         if self.multi_task_mode:
             self.current_task = 'pick'
@@ -356,14 +357,14 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         # choose by random
         if self.single_object_mode == 0:
-            self.obj_to_use = (random.choice(self.item_names) + "{}").format(0)
+            self.target_object = (random.choice(self.item_names) + "{}").format(0)
 
         if self.reset_color:
-            self.target_color = self.object_color[self.obj_to_use]
+            self.target_color = self.object_color[self.target_object]
 
-        self.object_id = self.object_to_id[self.obj_to_use.strip('0').lower()]
-        self.target_body_id = self.obj_body_id(self.obj_to_use)
-        self.target_geom_id = self.obj_geom_id(self.obj_to_use)
+        self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
+        self.target_body_id = self.obj_body_id(self.target_object)
+        self.target_geom_id = self.obj_geom_id(self.target_object)
 
     def reward(self, action=None):
         # compute sparse rewards
@@ -536,7 +537,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
             for i in range(len(self.item_names_org)):
 
-                if self.single_object_mode == 2 and self.object_id != i:
+                if self.single_object_mode == 2 and self.target_id != i:
                     # Skip adding to observations
                     continue
 
@@ -563,7 +564,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             if self.single_object_mode == 1:
                 # Zero out other objects observations
                 for obj_str, obj_mjcf in self.mujoco_objects.items():
-                    if obj_str == self.obj_to_use:
+                    if obj_str == self.target_object:
                         continue
                     else:
                         di["{}_pos".format(obj_str)] *= 0.0
@@ -636,7 +637,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         dist = np.linalg.norm(gripper_site_pos - obj_pos)
         r_reach = 1 - np.tanh(10.0 * dist)
         object_in_bin = int(
-            (not self.not_in_bin(obj_pos, self.object_id)) and r_reach < 0.6
+            (not self.not_in_bin(obj_pos, self.target_id)) and r_reach < 0.6
         )
 
         return object_in_bin > 0
@@ -695,8 +696,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         hover_mult = 0.7
 
         reward = self._check_placed()
-        objs_to_reach = [self.object_id]
-        target_bin_placements = [self.target_bin_placements[self.object_id]]
+        objs_to_reach = [self.target_id]
+        target_bin_placements = [self.target_bin_placements[self.target_id]]
 
         ### lifting reward for picking up an object ###
         r_lift = 0.

@@ -122,11 +122,13 @@ class SawyerLift(SawyerEnv):
         if placement_initializer:
             self.placement_initializer = placement_initializer
         elif self.arena_type == 'bin':
+            arena = BinsArena(table_full_size, table_friction)
+            bin_abs = arena.bin_abs
             self.placement_initializer = UniformRandomSampler(
-                x_range=[-(table_full_size[0]/2 - 0.1), table_full_size[0]/2 - 0.1],
-                y_range=[-(table_full_size[1]/2 - 0.1), table_full_size[1]/2 - 0.1],
-                #x_range=[-0.3, 0.3],
-                #y_range=[-0.3, 0.3],
+                x_range=[bin_abs[0]-(table_full_size[0]/2 - 0.05), bin_abs[0]+table_full_size[0]/2 - 0.05],
+                y_range=[bin_abs[1]-(table_full_size[1]/2 - 0.05), bin_abs[1]+table_full_size[1]/2 - 0.05],
+                #x_range=[bin_abs[0]-0.0, bin_abs[0]+0.0],
+                #y_range=[bin_abs[1]-0.0, bin_abs[1]+0.0],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -394,10 +396,17 @@ class SawyerLift(SawyerEnv):
             self.sim.model.site_rgba[self.eef_site_id] = rgba
 
 class SawyerLiftRandom(SawyerLift):
-
     def __init__(self, **kwargs):
         kwargs['object_choice'] = 'random'
         super().__init__(**kwargs)
+
+class SawyerLiftBinRandom(SawyerLift):
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'random'
+        kwargs['arena_type'] = 'bin'
+        kwargs['table_full_size'] = (0.39, 0.49, 0.82)
+        super().__init__(**kwargs)
+    
 
 
 if __name__ == '__main__':
@@ -409,7 +418,7 @@ if __name__ == '__main__':
     import robosuite.utils.transform_utils as T
 
 
-    env = SawyerLiftRandom(has_renderer=True,
+    env = SawyerLiftBinRandom(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')

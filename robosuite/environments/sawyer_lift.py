@@ -183,18 +183,20 @@ class SawyerLift(SawyerEnv):
 
         # load model for table top workspace
         if self.arena_type == 'table':
-            arena_cls = TableArena
+            self.mujoco_arena = TableArena(
+                table_full_size=self.table_full_size, table_friction=self.table_friction
+            )
+            # The sawyer robot has a pedestal, we want to align it with the table
+            self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
         elif self.arena_type == 'bin':
-            arena_cls = BinsArena
-        self.mujoco_arena = arena_cls(
-            table_full_size=self.table_full_size, table_friction=self.table_friction
-        )
+            self.mujoco_arena = BinsArena(
+                table_full_size=self.table_full_size, table_friction=self.table_friction
+            )
+            # The sawyer robot has a pedestal, we want to align it with the table
+            self.mujoco_arena.set_origin([.5, -0.3, 0])
 
         if self.use_indicator_object:
             self.mujoco_arena.add_pos_indicator()
-
-        # The sawyer robot has a pedestal, we want to align it with the table
-        self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
 
         object_cls, object_args = self.object_params[self.object_type]
         object = object_cls(**object_args)
@@ -503,7 +505,7 @@ if __name__ == '__main__':
         cube_pos = env.sim.data.get_geom_xpos('cube')
         """
 
-        if step % 100 == 0:
+        if step % 500 == 0:
             env.reset()
             print(env.object_type)
         step += 1

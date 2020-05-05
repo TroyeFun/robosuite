@@ -363,8 +363,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.target_color = self.object_color[self.target_object]
 
         self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
-        self.target_body_id = self.obj_body_id(self.target_object)
-        self.target_geom_id = self.obj_geom_id(self.target_object)
+        self.target_body_id = self.obj_body_id[self.target_object]
+        self.target_geom_id = self.obj_geom_id[self.target_object]
 
     def reward(self, action=None):
         # compute sparse rewards
@@ -620,6 +620,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.current_task == 'pick'
         else:
             self.current_task = 'place'
+        #TODO set target to another object if the current target is placed
 
     def _check_picked(self):
         """
@@ -629,7 +630,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         table_height = self.table_full_size[2]
 
         # target is higher than the table top above a margin
-        return target_height > table_height + 0.04
+        return target_height > table_height + 0.1
 
     def _check_placed(self):
         gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]
@@ -637,7 +638,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         dist = np.linalg.norm(gripper_site_pos - obj_pos)
         r_reach = 1 - np.tanh(10.0 * dist)
         object_in_bin = int(
-            (not self.not_in_bin(obj_pos, self.target_id)) and r_reach < 0.6
+            (not self.not_in_bin(obj_pos, self.target_id)) #and r_reach < 0.6
         )
 
         return object_in_bin > 0
@@ -694,10 +695,11 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         grasp_mult = 0.35
         lift_mult = 0.5
         hover_mult = 0.7
+        place_mult = 10
 
-        reward = self._check_placed()
-        objs_to_reach = [self.target_id]
-        target_bin_placements = [self.target_bin_placements[self.target_id]]
+        reward = self._check_placed() * place_mult
+        objs_to_reach = [self.target_body_id]
+        target_bin_placements = np.array([self.target_bin_placements[self.target_id]])
 
         ### lifting reward for picking up an object ###
         r_lift = 0.
@@ -708,7 +710,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             lift_mult - grasp_mult
             )
 
-        r_hover = 0
         # segment objects into left of the bins and above the bins
         object_xy_locs = self.sim.data.body_xpos[objs_to_reach][:, :2]
         y_check = (
@@ -726,10 +727,10 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         )
         # objects to the left get r_lift added to hover reward, those on the right get max(r_lift) added (to encourage dropping)
         r_hover_all = np.zeros(len(objs_to_reach))
-        r_hover_all[objects_above_bins] = lift_mult + (  # not reward lift
+        r_hover_all[objects_above_bins] = lift_mult + (  # not reward lift if obj on the right of bin
             1 - np.tanh(10.0 * dists[objects_above_bins])
         ) * (hover_mult - lift_mult)
-        r_hover_all[objects_not_above_bins] = r_lift + (  # reward lift
+        r_hover_all[objects_not_above_bins] = r_lift + (  # reward lift if obj on the left of bin
             1 - np.tanh(10.0 * dists[objects_not_above_bins])
         ) * (hover_mult - lift_mult)
         r_hover = np.max(r_hover_all)
@@ -920,7 +921,7 @@ if __name__ == '__main__':
     import math
 
 
-    env = SawyerPickPlaceTarget(has_renderer=True,
+    env = SawyerPickPlaceMultiTaskTarget(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
@@ -955,6 +956,13 @@ if __name__ == '__main__':
 
     color_type = 'blue'
 
+    """
+        while True:
+            env.reset()
+            print(env.current_task)
+        exit()
+
+    """
     while True:
         #env.sim.model.geom_matid[67:71] = -1   # set material to -1
         #for obj in objs:
@@ -1009,10 +1017,10 @@ if __name__ == '__main__':
         obj_points = obj_points.T
 
 
-        colors = np.ones((obj_points.shape[0], 1)) * 255
-        points = np.concatenate((obj_points, colors), axis=1).astype('float32')
-        cloud = pcl.PointCloud_PointXYZRGB(points)
-        pcl.save(cloud, '../../exp/cloud.pcd')
+        #colors = np.ones((obj_points.shape[0], 1)) * 255
+        #points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        #cloud = pcl.PointCloud_PointXYZRGB(points)
+        #pcl.save(cloud, '../../exp/cloud.pcd')
 
-
+        #reward = env.reward()
         ipdb.set_trace()

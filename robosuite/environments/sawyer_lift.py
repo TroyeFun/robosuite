@@ -4,7 +4,7 @@ import numpy as np
 from robosuite.utils.transform_utils import convert_quat
 from robosuite.environments.sawyer import SawyerEnv
 
-from robosuite.models.arenas import TableArena
+from robosuite.models.arenas import TableArena, BinsArena
 from robosuite.models.objects import (
     BoxObject, 
     MilkObject,
@@ -45,6 +45,7 @@ class SawyerLift(SawyerEnv):
         camera_width=256,
         camera_depth=False,
         object_choice='cube',
+        arena_type='table'
     ):
         """
         Args:
@@ -109,6 +110,7 @@ class SawyerLift(SawyerEnv):
         # settings for table top
         self.table_full_size = table_full_size
         self.table_friction = table_friction
+        self.arena_type = arena_type
 
         # whether to use ground-truth object states
         self.use_object_obs = use_object_obs
@@ -119,7 +121,16 @@ class SawyerLift(SawyerEnv):
         # object placement initializer
         if placement_initializer:
             self.placement_initializer = placement_initializer
-        else:
+        elif self.arena_type == 'bin':
+            self.placement_initializer = UniformRandomSampler(
+                x_range=[-(table_full_size[0]/2 - 0.1), table_full_size[0]/2 - 0.1],
+                y_range=[-(table_full_size[1]/2 - 0.1), table_full_size[1]/2 - 0.1],
+                #x_range=[-0.3, 0.3],
+                #y_range=[-0.3, 0.3],
+                ensure_object_boundary_in_range=False,
+                z_rotation=True,
+            )
+        elif self.arena_type == 'table':
             self.placement_initializer = UniformRandomSampler(
                 x_range=[-0.03, 0.03],
                 y_range=[-0.03, 0.03],
@@ -128,6 +139,8 @@ class SawyerLift(SawyerEnv):
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
+        else:
+            raise NotImplementedError
         self.object_choice = object_choice
 
         # [cls, kwargs]
@@ -167,9 +180,14 @@ class SawyerLift(SawyerEnv):
         self.mujoco_robot.set_base_xpos([0, 0, 0])
 
         # load model for table top workspace
-        self.mujoco_arena = TableArena(
+        if self.arena_type == 'table':
+            arena_cls = TableArena
+        elif self.arena_type == 'bin':
+            arena_cls = BinsArena
+        self.mujoco_arena = arena_cls(
             table_full_size=self.table_full_size, table_friction=self.table_friction
         )
+
         if self.use_indicator_object:
             self.mujoco_arena.add_pos_indicator()
 

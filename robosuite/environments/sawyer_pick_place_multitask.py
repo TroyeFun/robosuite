@@ -619,6 +619,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.current_task == 'pick'
         else:
             self.current_task = 'place'
+        #TODO set target to another object if the current target is placed
 
     def _check_picked(self):
         """
@@ -636,7 +637,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         dist = np.linalg.norm(gripper_site_pos - obj_pos)
         r_reach = 1 - np.tanh(10.0 * dist)
         object_in_bin = int(
-            (not self.not_in_bin(obj_pos, self.object_id)) and r_reach < 0.6
+            (not self.not_in_bin(obj_pos, self.object_id)) #and r_reach < 0.6
         )
 
         return object_in_bin > 0
@@ -693,8 +694,9 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         grasp_mult = 0.35
         lift_mult = 0.5
         hover_mult = 0.7
+        place_mult = 10
 
-        reward = self._check_placed()
+        reward = self._check_placed() * place_mult
         objs_to_reach = [self.object_id]
         target_bin_placements = [self.target_bin_placements[self.object_id]]
 

@@ -616,6 +616,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         return np.sum(self.objects_in_bins) == len(self.ob_inits)
 
     def _update_current_task(self):
+        #return 'pick'
+
         if not self._check_picked():
             self.current_task == 'pick'
         else:
@@ -692,12 +694,13 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         # support target mode only
         
         ### hover reward for getting object above bin ###
+        base_reward = 2.25  # max reward of picking
         grasp_mult = 0.35
         lift_mult = 0.5
         hover_mult = 0.7
         place_mult = 10
 
-        reward = self._check_placed() * place_mult
+        reward = base_reward + self._check_placed() * place_mult
         objs_to_reach = [self.target_body_id]
         target_bin_placements = np.array([self.target_bin_placements[self.target_id]])
 

@@ -28,7 +28,7 @@ class SawyerLiftBinobs(SawyerEnv):
     def __init__(
         self,
         gripper_type="TwoFingerGripper",
-        table_full_size=(0.8, 0.8, 0.8),
+        table_full_size=(0.39, 0.49, 0.82),
         table_friction=(1., 5e-3, 1e-4),
         use_camera_obs=True,
         use_object_obs=True,
@@ -462,7 +462,7 @@ if __name__ == '__main__':
     import robosuite.utils.transform_utils as T
 
 
-    env = SawyerLiftBinobsRandom(has_renderer=True,
+    env = SawyerLiftBinobs(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')

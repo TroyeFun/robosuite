@@ -616,7 +616,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         return np.sum(self.objects_in_bins) == len(self.ob_inits)
 
     def _update_current_task(self):
-        #return 'pick'
+        #return
 
         if not self._check_picked():
             self.current_task == 'pick'

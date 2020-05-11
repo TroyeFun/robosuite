@@ -51,8 +51,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         camera_width=256,
         camera_depth=False,
         multi_task_mode=True,
-        reset_color=False,
-        #reset_color=True,
+        #reset_color=False,
+        reset_color=True,
         with_target=False,
     ):
         """
@@ -1026,4 +1026,7 @@ if __name__ == '__main__':
         #pcl.save(cloud, '../../exp/cloud.pcd')
 
         #reward = env.reward()
+
+        obs = env._get_observation()
+
         ipdb.set_trace()

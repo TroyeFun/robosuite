@@ -435,7 +435,7 @@ if __name__ == '__main__':
                     #object_choice='cereal',
                     #object_choice='bread',
                     #object_choice='milk',
-                    object_choice='can',
+                    object_choice='milk',
                      camera_name='agentview')
 
     rgba_color = {
@@ -466,8 +466,8 @@ if __name__ == '__main__':
     color_type = 'blue'
     step = 0
     while True:
-        env.object_choice = objs[step % 4]
-        env.reset()
+        #env.object_choice = objs[step % 4]
+        #env.reset()
         #env.sim.model.geom_matid[44] = -1
         #env.sim.model.geom_rgba[44,:] = rgba_color[obj_colors[env.object_choice]]
         env.render()
@@ -477,9 +477,9 @@ if __name__ == '__main__':
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
 
-        color = color[75:159, 85:169]
+        #color = color[75:159, 85:169]
 
-        cv2.imwrite('../../exp/{}.png'.format(env.object_choice), color)
+        #cv2.imwrite('../../exp/{}.png'.format(env.object_choice), color)
         """
         depth = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('color', color)
@@ -540,6 +540,7 @@ if __name__ == '__main__':
         #    action = np.random.rand(8)
         #    env.step(action)
         step += 1
+        print(obs['cube_pos'], obs['cube_quat'], obs['gripper_to_cube'])
         pdb()
         
 

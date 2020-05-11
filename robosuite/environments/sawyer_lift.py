@@ -373,7 +373,7 @@ class SawyerLift(SawyerEnv):
         table_height = self.table_full_size[2]
 
         # cube is higher than the table top above a margin
-        return cube_height > table_height + 0.04
+        return cube_height > table_height + 0.1
 
     def _gripper_visualization(self):
         """
@@ -418,6 +418,25 @@ class SawyerLiftObject(SawyerLift):
         assert 'object_choice' in kwargs
         super().__init__(**kwargs)
 
+class SawyerLiftCereal(SawyerLift):
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'cereal'
+        super().__init__(**kwargs)
+
+class SawyerLiftMilk(SawyerLift):
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'milk'
+        super().__init__(**kwargs)
+
+class SawyerLiftCan(SawyerLift):
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'can'
+        super().__init__(**kwargs)
+
+class SawyerLiftBread(SawyerLift):
+    def __init__(self, **kwargs):
+        kwargs['object_choice'] = 'bread'
+        super().__init__(**kwargs)
 
 if __name__ == '__main__':
     import ipdb

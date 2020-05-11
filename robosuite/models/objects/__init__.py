@@ -14,6 +14,11 @@ from .xml_objects import (
     CerealVisualObject,
     CanVisualObject,
     PlateWithHoleObject,
+    BowlObject,
+    ConeObject,
+    CrossJointObject,
+    HammerObject,
+    HandleObject,
 )
 
 from .generated_objects import (

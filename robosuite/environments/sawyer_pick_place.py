@@ -645,8 +645,8 @@ if __name__ == '__main__':
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
-                     #camera_name='frontview')
-                     camera_name='agentview')
+                     camera_name='frontview')
+                     #camera_name='agentview')
 
 
     objs = ['Milk0', 'Can0', 'Bread0', 'Cereal0']
@@ -677,9 +677,9 @@ if __name__ == '__main__':
     color_type = 'blue'
 
     while True:
-        #env.sim.model.geom_matid[67:71] = -1   # set material to -1
-        #for obj in objs:
-        #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
+        env.sim.model.geom_matid[67:71] = -1   # set material to -1
+        for obj in objs:
+            env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
         env.render()
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
@@ -699,6 +699,8 @@ if __name__ == '__main__':
         #cv2.waitKey(100)
 
         import xml.etree.ElementTree as ET
+        cv2.imwrite('../../exp/color.png', color)
+        cv2.imwrite('../../exp/depth.png', depth*150)
 
         obs = env._get_observation()
-        #ipdb.set_trace()
+        ipdb.set_trace()

@@ -15,6 +15,7 @@ from robosuite.models.objects import (
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 import random
+from ipdb import set_trace as pdb
 
 
 class SawyerLift(SawyerEnv):
@@ -136,8 +137,8 @@ class SawyerLift(SawyerEnv):
             self.placement_initializer = UniformRandomSampler(
                 x_range=[-0.03, 0.03],
                 y_range=[-0.03, 0.03],
-                #x_range=[-0.3, 0.3],
-                #y_range=[-0.3, 0.3],
+                #x_range=[-0., 0.],
+                #y_range=[-0., 0.],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -180,6 +181,9 @@ class SawyerLift(SawyerEnv):
         """
         super()._load_model()
         self.mujoco_robot.set_base_xpos([0, 0, 0])
+        
+        #print('warning: load model')
+        #self.mujoco_robot.set_base_xpos([-1, 0, 0])
 
         # load model for table top workspace
         if self.arena_type == 'table':
@@ -409,6 +413,10 @@ class SawyerLiftBinRandom(SawyerLift):
         kwargs['table_full_size'] = (0.39, 0.49, 0.82)
         super().__init__(**kwargs)
     
+class SawyerLiftObject(SawyerLift):
+    def __init__(self, **kwargs):
+        assert 'object_choice' in kwargs
+        super().__init__(**kwargs)
 
 
 if __name__ == '__main__':
@@ -420,10 +428,14 @@ if __name__ == '__main__':
     import robosuite.utils.transform_utils as T
 
 
-    env = SawyerLiftBinRandom(has_renderer=True,
+    env = SawyerLiftObject(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')
+                    #object_choice='cereal',
+                    #object_choice='bread',
+                    #object_choice='milk',
+                    object_choice='can',
                      camera_name='agentview')
 
     rgba_color = {
@@ -440,24 +452,42 @@ if __name__ == '__main__':
 
     }
 
+    objs = ['milk', 'can', 'bread', 'cereal']
+    color_types = ['blue', 'green', 'purple', 'yellow']
+    obj_colors = dict(zip(objs, color_types))
+    rgba_color = {
+        'blue':  [0, 0, 3, 1],  # 120,255,255
+        'green': [0, 3, 0, 1],  # 60,255,255
+        'red':   [3, 0, 0, 1], # 0, 255,255
+        'yellow':[3, 3, 0, 1],  # 30,255,255
+        'purple':[3, 0, 3, 1],  # 150,255,255
+    }
+
     color_type = 'blue'
     step = 0
     while True:
-        lower, upper = np.array(hsv_range[color_type])
-        #env.sim.model.geom_rgba[44,:] = rgba_color[color_type]
+        env.object_choice = objs[step % 4]
+        env.reset()
+        #env.sim.model.geom_matid[44] = -1
+        #env.sim.model.geom_rgba[44,:] = rgba_color[obj_colors[env.object_choice]]
         env.render()
-        """
 
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
+
+        color = color[75:159, 85:169]
+
+        cv2.imwrite('../../exp/{}.png'.format(env.object_choice), color)
+        """
         depth = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('color', color)
         cv2.waitKey(100)
         cv2.imshow('depth', depth)
         cv2.waitKey(100)
 
+        lower, upper = np.array(hsv_range[color_type])
         hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower, upper)
         cv2.imshow('mask', mask)
@@ -505,11 +535,12 @@ if __name__ == '__main__':
         cube_pos = env.sim.data.get_geom_xpos('cube')
         """
 
-        if step % 1000 == 0:
-            env.reset()
-            action = np.random.rand(8)
-            env.step(action)
+        #if step % 1000 == 0:
+        #    env.reset()
+        #    action = np.random.rand(8)
+        #    env.step(action)
         step += 1
+        pdb()
         
 
 """

@@ -120,3 +120,29 @@ class PlateWithHoleObject(MujocoXMLObject):
 
     def __init__(self):
         super().__init__(xml_path_completion("objects/plate-with-hole.xml"))
+
+
+class BowlObject(MujocoXMLObject):
+    def __init__(self):
+        super().__init__(xml_path_completion('objects/bowl.xml'))
+
+
+class ConeObject(MujocoXMLObject):
+    def __init__(self):
+        super().__init__(xml_path_completion('objects/cone.xml'))
+    
+    
+class CrossJointObject(MujocoXMLObject):
+    def __init__(self):
+        super().__init__(xml_path_completion('objects/cross_joint.xml'))
+
+
+class HammerObject(MujocoXMLObject):
+    def __init__(self):
+        super().__init__(xml_path_completion('objects/hammer.xml'))
+
+
+class HandleObject(MujocoXMLObject):
+    def __init__(self):
+        super().__init__(xml_path_completion('objects/handle.xml'))
+

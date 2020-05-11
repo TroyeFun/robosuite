@@ -148,7 +148,7 @@ class SawyerLift(SawyerEnv):
 
         # [cls, kwargs]
         self.object_params = {
-            'cube': [BoxObject, {'size_min':[0.020, 0.020, 0.020], 'size_max':[0.022, 0.022, 0.022], 'rgba':[0, 0, 255, 1]}],
+            'cube': [BoxObject, {'size_min':[0.020, 0.020, 0.020], 'size_max':[0.022, 0.022, 0.022], 'rgba':[0, 0, 3, 1]}],
             'milk': [MilkObject, {}],
             'bread': [BreadObject, {}],
             'cereal': [CerealObject, {}],
@@ -215,6 +215,8 @@ class SawyerLift(SawyerEnv):
             initializer=self.placement_initializer,
         )
         self.model.place_objects()
+
+        self.target_color = 'blue'
 
     def _get_reference(self):
         """

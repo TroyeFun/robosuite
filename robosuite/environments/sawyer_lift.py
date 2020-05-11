@@ -16,6 +16,7 @@ from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 import random
 from ipdb import set_trace as pdb
+import robosuite.utils.visualize as vis
 
 
 class SawyerLift(SawyerEnv):
@@ -216,7 +217,7 @@ class SawyerLift(SawyerEnv):
         )
         self.model.place_objects()
 
-        self.target_color = 'blue'
+        self.target_color = vis.color2id['blue']
 
     def _get_reference(self):
         """

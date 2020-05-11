@@ -21,6 +21,7 @@ from robosuite.models.objects import (
 )
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import PickPlaceTask, UniformRandomSampler
+import robosuite.utils.visualize as vis
 from robosuite.utils.visualize import color_rgba
 
 from ipdb import set_trace as pdb
@@ -360,7 +361,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.target_object = (random.choice(self.item_names) + "{}").format(0)
 
         if self.reset_color:
-            self.target_color = self.object_color[self.target_object]
+            self.target_color = vis.color2id[self.object_color[self.target_object]]
 
         self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
         self.target_body_id = self.obj_body_id[self.target_object]

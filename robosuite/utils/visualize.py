@@ -23,6 +23,8 @@ color_rgba = {
     'yellow':[3, 3, 0, 1],  # 30,255,255
     'purple':[3, 0, 3, 1],  # 150,255,255
 }
+color2id = dict(zip(color_rgba.keys(), range(len(color_rgba))))
+id2color = dict(zip(color2id.values(), color2id.keys()))
 
 def vis_rgbd_img(img, color=None):
     """

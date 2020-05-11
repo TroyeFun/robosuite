@@ -957,7 +957,7 @@ if __name__ == '__main__':
     #for obj in objs:
     #    env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
 
-    color_type = 'blue'
+    color_type = 'yellow'
 
     """
         while True:
@@ -1020,13 +1020,15 @@ if __name__ == '__main__':
         obj_points = obj_points.T
 
 
-        #colors = np.ones((obj_points.shape[0], 1)) * 255
-        #points = np.concatenate((obj_points, colors), axis=1).astype('float32')
-        #cloud = pcl.PointCloud_PointXYZRGB(points)
-        #pcl.save(cloud, '../../exp/cloud.pcd')
+        colors = np.ones((obj_points.shape[0], 1)) * 255
+        points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        cloud = pcl.PointCloud_PointXYZRGB(points)
+        pcl.save(cloud, '../../exp/cloud1.pcd')
 
-        #reward = env.reward()
-
-        obs = env._get_observation()
+        import utils.visualize as vis
+        rgbd_img = np.concatenate([obs['image'].transpose(2,0,1), depth[np.newaxis,:,:]])
+        pcd = vis.get_pcd(rgbd_img, cam_mat, cam_pos, f, 'yellow')
+        vis.save_pcd(pcd, '../../exp/')
+        
 
         ipdb.set_trace()

@@ -115,6 +115,7 @@ def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color):
     color_img, depth_img = rgbd_img[:3], rgbd_img[3]
     h, w = depth_img.shape
     mask = get_mask(color_img, color)
+    depth_img = cv2.flip(depth_img, 0)
 
     x_pix = np.arange(w) - (w-1)/2
     x_pix = np.tile(x_pix, (h,1))

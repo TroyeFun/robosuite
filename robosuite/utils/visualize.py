@@ -81,7 +81,7 @@ def save_depth_img(img, path):
     img = cv2.flip(img, 0)
     cv2.imwrite(path + '/depth.png', img)
 
-def get_mask(img, color):
+def get_mask(img, color, flip=True, format='chw'):
     """
     img: color img 3 x h x w, rgb
     color: 'yellow',...
@@ -89,9 +89,11 @@ def get_mask(img, color):
     lower, upper = np.array(hsv_range[color])
 
     img = img.astype('uint8')
-    img = img.transpose((1,2,0))
+    if format == 'chw':
+        img = img.transpose((1,2,0))
     img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    img = cv2.flip(img, 0)
+    if flip:
+        img = cv2.flip(img, 0)
     mask = cv2.inRange(img, lower, upper)
     return mask
 
@@ -108,28 +110,33 @@ def save_mask(img, path):
     """
     cv2.imwrite(path + '/mask.png', img)
 
-def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color):
+def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color, x_pix=None, y_pix=None, flip=True, format='chw'):
     """
     rgbd_img: 4 x h x w
     cam_mat: camera rotation matrix, 3x3 np.array 
     cam_pos: camera translation vector, (3,) np.array
     """
-    color_img, depth_img = rgbd_img[:3], rgbd_img[3]
+    if format == 'chw':
+        rgbd_img = rgbd_img.transpose(1,2,0)
+    color_img, depth_img = rgbd_img[:,:,:3], rgbd_img[:,:,3]
     h, w = depth_img.shape
-    mask = get_mask(color_img, color)
-    depth_img = cv2.flip(depth_img, 0)
+    mask = get_mask(color_img, color, flip=flip, format='hwc')
+    if flip:
+        depth_img = cv2.flip(depth_img, 0)
 
-    x_pix = np.arange(w) - (w-1)/2
-    x_pix = np.tile(x_pix, (h,1))
-    y_pix = np.arange(h)[:, np.newaxis] - (h-1)/2
-    y_pix = np.tile(y_pix, (1,w))
+    if x_pix is None:
+        x_pix = np.arange(w) - (w-1)/2
+        x_pix = np.tile(x_pix, (h,1))
+    if y_pix is None:
+        y_pix = np.arange(h)[:, np.newaxis] - (h-1)/2
+        y_pix = np.tile(y_pix, (1,w))
     
     x_pcd = x_pix * depth_img / cam_f
     y_pcd = y_pix * depth_img / cam_f
 
     mask_index = mask > 0
 
-    x_pcd = x_pcd[mask_index]
+    x_pcd = x_pcd[mask_index] if flip else -x_pcd[mask_index]
     y_pcd = -y_pcd[mask_index]
     z_pcd = -depth_img[mask_index]
     pcd = np.stack([x_pcd, y_pcd, z_pcd], axis=0)

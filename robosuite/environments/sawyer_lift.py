@@ -217,7 +217,8 @@ class SawyerLift(SawyerEnv):
         )
         self.model.place_objects()
 
-        self.target_color = vis.color2id['blue']
+        #self.target_color = vis.color2id['blue']
+        self.target_color = 'blue'
 
     def _get_reference(self):
         """

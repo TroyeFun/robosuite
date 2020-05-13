@@ -56,7 +56,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         reset_color=True,
         with_target=False,
         place_at_center=True,
-        pick_only=False,
+        pick_only=True,
     ):
         """
         Args:
@@ -211,6 +211,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         ]
 
         self.pick_only = pick_only
+        print('warning: pick_only', pick_only)
 
     def _load_model(self):
         super()._load_model()

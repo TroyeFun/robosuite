@@ -685,7 +685,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         #TODO targetless mode
         # support target mode only
         # reaching reward
-        reward = self._check_picked()
+        if self._check_picked():
+            reward = 1.0
 
         target_pos = self.sim.data.body_xpos[self.target_body_id]
         gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]

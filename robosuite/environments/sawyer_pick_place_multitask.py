@@ -230,7 +230,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         ]
         self.item_names = ["Milk", "Bread", "Cereal", "Can"]
         self.item_names_org = list(self.item_names)
-        self.target_object = (self.item_names[0] + "{}").format(0)
 
         lst = []
         for j in range(len(self.vis_inits)):
@@ -252,7 +251,19 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.mujoco_objects,
             self.visual_objects,
         )
-        self.model.place_objects()
+
+        self.target_object = (self.item_names[0] + "{}").format(0)
+        if self.single_object_mode == 1:
+            self.target_object = (random.choice(self.item_names) + "{}").format(0)
+        elif self.single_object_mode == 2:
+            self.target_object = (self.item_names[self.object_id] + "{}").format(0)
+
+        # warning set place range
+        if self.single_object_mode == 1 or self.single_object_mode == 2:
+            self.model.place_objects(place_radius=0.1, obj_names=[self.target_object])
+        else:
+            self.model.place_objects()
+
         self.model.place_visual()
         self.bin_pos = string_to_array(self.model.bin2_body.get("pos"))
         self.bin_size = self.model.bin_size
@@ -339,12 +350,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         super()._reset_internal()
 
         # reset positions of objects, and move objects out of the scene depending on the mode
-        self.model.place_objects()
-        if self.single_object_mode == 1:
-            self.target_object = (random.choice(self.item_names) + "{}").format(0)
-            self.clear_objects(self.target_object)
-        elif self.single_object_mode == 2:
-            self.target_object = (self.item_names[self.target_id] + "{}").format(0)
+        if self.single_object_mode == 1 or self.single_object_mode == 2:
             self.clear_objects(self.target_object)
 
         # reset joint positions
@@ -931,7 +937,7 @@ if __name__ == '__main__':
     import math
 
 
-    env = SawyerPickPlaceMultiTaskTarget(has_renderer=True,
+    env = SawyerPickPlaceSingleMultiTaskTarget(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')

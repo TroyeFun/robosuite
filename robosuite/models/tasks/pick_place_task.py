@@ -85,13 +85,17 @@ class PickPlaceTask(Task):
             return [np.cos(rot_angle / 2), 0, 0, np.sin(rot_angle / 2)]
         return [1, 0, 0, 0]
 
-    def place_objects(self, place_radius=-1):
+    def place_objects(self, place_radius=-1, obj_names=None):
         """Places objects randomly until no collisions or max iterations hit."""
         placed_objects = []
         index = 0
 
         # place objects by rejection sampling
-        for _, obj_mjcf in self.mujoco_objects.items():
+        for obj_name, obj_mjcf in self.mujoco_objects.items():
+            if obj_names is not None and obj_name not in obj_names:
+                index += 1
+                continue
+            
             horizontal_radius = obj_mjcf.get_horizontal_radius()
             bottom_offset = obj_mjcf.get_bottom_offset()
             success = False

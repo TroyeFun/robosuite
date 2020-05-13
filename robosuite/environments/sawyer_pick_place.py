@@ -50,6 +50,7 @@ class SawyerPickPlace(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        place_at_center=False,
     ):
         """
         Args:
@@ -148,6 +149,8 @@ class SawyerPickPlace(SawyerEnv):
 
         # whether to use ground-truth object states
         self.use_object_obs = use_object_obs
+        
+        self.place_at_center = place_at_center
 
         super().__init__(
             gripper_type=gripper_type,
@@ -238,7 +241,7 @@ class SawyerPickPlace(SawyerEnv):
             self.obj_to_use = (self.item_names[self.object_id] + "{}").format(0)
 
         # warning set place range
-        if self.single_object_mode == 1 or self.single_object_mode == 2:
+        if self.place_at_center and (self.single_object_mode == 1 or self.single_object_mode == 2):
             self.model.place_objects(place_radius=0.1, obj_names=[self.obj_to_use])
         else:
             self.model.place_objects()

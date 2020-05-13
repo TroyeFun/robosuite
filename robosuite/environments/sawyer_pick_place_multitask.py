@@ -55,6 +55,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         #reset_color=False,
         reset_color=True,
         with_target=False,
+        place_at_center=True,
     ):
         """
         Args:
@@ -170,6 +171,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         # set target object
         self.with_target = with_target
 
+        self.place_at_center = place_at_center
+
         super().__init__(
             gripper_type=gripper_type,
             gripper_visualization=gripper_visualization,
@@ -259,7 +262,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.target_object = (self.item_names[self.object_id] + "{}").format(0)
 
         # warning set place range
-        if self.single_object_mode == 1 or self.single_object_mode == 2:
+        if self.place_at_center and (self.single_object_mode == 1 or self.single_object_mode == 2):
             self.model.place_objects(place_radius=0.1, obj_names=[self.target_object])
         else:
             self.model.place_objects()

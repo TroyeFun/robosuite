@@ -56,6 +56,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         reset_color=True,
         with_target=False,
         place_at_center=True,
+        pick_only=False,
     ):
         """
         Args:
@@ -208,6 +209,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         self.collision_check_geom_ids = [
             self.sim.model._geom_name2id[k] for k in self.collision_check_geom_names
         ]
+
+        self.pick_only = pick_only
 
     def _load_model(self):
         super()._load_model()
@@ -633,9 +636,12 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
     def _update_current_task(self):
         #return
+        if self.pick_only:
+            self.current_task = 'pick'
+            return
 
         if not self._check_picked():
-            self.current_task == 'pick'
+            self.current_task = 'pick'
         else:
             self.current_task = 'place'
         #TODO set target to another object if the current target is placed

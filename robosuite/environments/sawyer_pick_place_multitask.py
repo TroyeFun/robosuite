@@ -219,7 +219,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.mujoco_arena.add_pos_indicator()
 
         # The sawyer robot has a pedestal, we want to align it with the table
-        self.mujoco_arena.set_origin([.5, -0.3, 0])
+        self.mujoco_arena.set_origin([.56, 0, 0])
 
         self.ob_inits = [MilkObject, BreadObject, CerealObject, CanObject]
         self.vis_inits = [
@@ -346,6 +346,11 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         elif self.single_object_mode == 2:
             self.target_object = (self.item_names[self.target_id] + "{}").format(0)
             self.clear_objects(self.target_object)
+
+        # reset joint positions
+        init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        init_pos += np.random.randn(init_pos.shape[0]) * 0.02
+        self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
 
         if self.multi_task_mode:
             self.current_task = 'pick'
@@ -980,57 +985,57 @@ if __name__ == '__main__':
         depth = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('color', color)
         cv2.waitKey(100)
-        cv2.imshow('depth', np.tile(depth[:,:,np.newaxis], (1,1,3)))
-        cv2.waitKey(100)
+        #cv2.imshow('depth', np.tile(depth[:,:,np.newaxis], (1,1,3)))
+        #cv2.waitKey(100)
 
-        lower, upper = np.array(hsv_range[color_type])
-        hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, lower, upper)
-        cv2.imshow('mask', mask)
-        cv2.waitKey(100)
+        #lower, upper = np.array(hsv_range[color_type])
+        #hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+        #mask = cv2.inRange(hsv, lower, upper)
+        #cv2.imshow('mask', mask)
+        #cv2.waitKey(100)
 
-        x = np.arange(env.camera_width) - env.camera_width / 2
-        x = np.tile(x, (env.camera_height, 1))
-        y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
-        y = np.tile(y, (1, env.camera_width))
-        
-        cam_id = env.sim.model.camera_name2id(env.camera_name)
-        fovy = env.sim.model.cam_fovy[cam_id]
-        cam_pos = env.sim.model.cam_pos[cam_id]
-        cam_quat = env.sim.model.cam_quat[cam_id]
-        cam_mat0 = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
-        # can directly get from 
-        cam_mat = env.sim.model.cam_mat0[cam_id].reshape(3,3)
-        cam_pos = cam_pos.reshape(3,1)
-        
-        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
+        #x = np.arange(env.camera_width) - env.camera_width / 2
+        #x = np.tile(x, (env.camera_height, 1))
+        #y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
+        #y = np.tile(y, (1, env.camera_width))
+        #
+        #cam_id = env.sim.model.camera_name2id(env.camera_name)
+        #fovy = env.sim.model.cam_fovy[cam_id]
+        #cam_pos = env.sim.model.cam_pos[cam_id]
+        #cam_quat = env.sim.model.cam_quat[cam_id]
+        #cam_mat0 = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
+        ## can directly get from 
+        #cam_mat = env.sim.model.cam_mat0[cam_id].reshape(3,3)
+        #cam_pos = cam_pos.reshape(3,1)
+        #
+        #f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
 
-        #f *= 0.1
-        #depth *= 2.7
+        ##f *= 0.1
+        ##depth *= 2.7
 
-        x = x * depth / f
-        y = y * depth / f
+        #x = x * depth / f
+        #y = y * depth / f
 
-        obj_index = mask > 0
-        obj_x = x[obj_index][np.newaxis,:]
-        obj_y = -y[obj_index][np.newaxis,:]
-        obj_z = -depth[obj_index][np.newaxis,:]
-        obj_points = np.concatenate((obj_x, obj_y, obj_z), axis=0)
+        #obj_index = mask > 0
+        #obj_x = x[obj_index][np.newaxis,:]
+        #obj_y = -y[obj_index][np.newaxis,:]
+        #obj_z = -depth[obj_index][np.newaxis,:]
+        #obj_points = np.concatenate((obj_x, obj_y, obj_z), axis=0)
 
-        # transform
-        obj_points = cam_mat.dot(obj_points) + cam_pos
-        obj_points = obj_points.T
+        ## transform
+        #obj_points = cam_mat.dot(obj_points) + cam_pos
+        #obj_points = obj_points.T
 
 
-        colors = np.ones((obj_points.shape[0], 1)) * 255
-        points = np.concatenate((obj_points, colors), axis=1).astype('float32')
-        cloud = pcl.PointCloud_PointXYZRGB(points)
-        pcl.save(cloud, '../../exp/cloud1.pcd')
+        #colors = np.ones((obj_points.shape[0], 1)) * 255
+        #points = np.concatenate((obj_points, colors), axis=1).astype('float32')
+        #cloud = pcl.PointCloud_PointXYZRGB(points)
+        #pcl.save(cloud, '../../exp/cloud1.pcd')
 
-        import utils.visualize as vis
-        rgbd_img = np.concatenate([obs['image'].transpose(2,0,1), depth[np.newaxis,:,:]])
-        pcd = vis.get_pcd(rgbd_img, cam_mat, cam_pos, f, 'yellow')
-        vis.save_pcd(pcd, '../../exp/')
-        
+        #import utils.visualize as vis
+        #rgbd_img = np.concatenate([obs['image'].transpose(2,0,1), depth[np.newaxis,:,:]])
+        #pcd = vis.get_pcd(rgbd_img, cam_mat, cam_pos, f, 'yellow')
+        #vis.save_pcd(pcd, '../../exp/')
+        #
 
         ipdb.set_trace()

@@ -85,7 +85,7 @@ class PickPlaceTask(Task):
             return [np.cos(rot_angle / 2), 0, 0, np.sin(rot_angle / 2)]
         return [1, 0, 0, 0]
 
-    def place_objects(self):
+    def place_objects(self, place_radius=-1):
         """Places objects randomly until no collisions or max iterations hit."""
         placed_objects = []
         index = 0
@@ -96,8 +96,12 @@ class PickPlaceTask(Task):
             bottom_offset = obj_mjcf.get_bottom_offset()
             success = False
             for _ in range(5000):  # 5000 retries
-                bin_x_half = self.bin_size[0] / 2 - horizontal_radius - 0.05
-                bin_y_half = self.bin_size[1] / 2 - horizontal_radius - 0.05
+                if place_radius == -1:
+                    bin_x_half = self.bin_size[0] / 2 - horizontal_radius - 0.05
+                    bin_y_half = self.bin_size[1] / 2 - horizontal_radius - 0.05
+                else:
+                    bin_x_half = place_radius - horizontal_radius - 0.05
+                    bin_y_half = place_radius - horizontal_radius - 0.05
                 object_x = np.random.uniform(high=bin_x_half, low=-bin_x_half)
                 object_y = np.random.uniform(high=bin_y_half, low=-bin_y_half)
 

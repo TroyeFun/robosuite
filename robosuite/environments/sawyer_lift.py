@@ -127,10 +127,10 @@ class SawyerLift(SawyerEnv):
             arena = BinsArena(table_full_size, table_friction)
             bin_abs = arena.bin_abs
             self.placement_initializer = UniformRandomSampler(
-                x_range=[bin_abs[0]-(table_full_size[0]/2 - 0.05), bin_abs[0]+table_full_size[0]/2 - 0.05],
-                y_range=[bin_abs[1]-(table_full_size[1]/2 - 0.05), bin_abs[1]+table_full_size[1]/2 - 0.05],
-                #x_range=[bin_abs[0]-0.0, bin_abs[0]+0.0],
-                #y_range=[bin_abs[1]-0.0, bin_abs[1]+0.0],
+                #x_range=[bin_abs[0]-(table_full_size[0]/2 - 0.05), bin_abs[0]+table_full_size[0]/2 - 0.05],
+                #y_range=[bin_abs[1]-(table_full_size[1]/2 - 0.05), bin_abs[1]+table_full_size[1]/2 - 0.05],
+                x_range=[bin_abs[0]-0.05, bin_abs[0]+0.05],
+                y_range=[bin_abs[1]-0.05, bin_abs[1]+0.05],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -198,7 +198,8 @@ class SawyerLift(SawyerEnv):
                 table_full_size=self.table_full_size, table_friction=self.table_friction
             )
             # The sawyer robot has a pedestal, we want to align it with the table
-            self.mujoco_arena.set_origin([.5, -0.3, 0])
+            self.mujoco_arena.set_origin([.56, 0, 0])
+            #self.mujoco_arena.set_origin([.5, -0.3, 0])
 
         if self.use_indicator_object:
             self.mujoco_arena.add_pos_indicator()
@@ -451,15 +452,15 @@ if __name__ == '__main__':
     import robosuite.utils.transform_utils as T
 
 
-    env = SawyerLiftObject(has_renderer=True,
+    env = SawyerLiftBinRandom(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')
                     #object_choice='cereal',
                     #object_choice='bread',
                     #object_choice='milk',
-                    object_choice='milk',
-                     camera_name='agentview')
+                    #object_choice='milk',
+                     camera_name='frontview')
 
     rgba_color = {
         'blue':  [0, 0, 3, 1],  # 120,255,255
@@ -499,14 +500,14 @@ if __name__ == '__main__':
         color, depth = obs['image'], obs['depth']
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
+        cv2.imshow('color', color)
+        cv2.waitKey(100)
 
         #color = color[75:159, 85:169]
 
         #cv2.imwrite('../../exp/{}.png'.format(env.object_choice), color)
         """
         depth = cv2.flip(depth, 0) # horizontal flip
-        cv2.imshow('color', color)
-        cv2.waitKey(100)
         cv2.imshow('depth', depth)
         cv2.waitKey(100)
 

@@ -198,7 +198,7 @@ class SawyerPickPlace(SawyerEnv):
             self.mujoco_arena.add_pos_indicator()
 
         # The sawyer robot has a pedestal, we want to align it with the table
-        self.mujoco_arena.set_origin([.5, -0.3, 0])
+        self.mujoco_arena.set_origin([.56, 0, 0])
 
         self.ob_inits = [MilkObject, BreadObject, CerealObject, CanObject]
         self.vis_inits = [
@@ -231,7 +231,13 @@ class SawyerPickPlace(SawyerEnv):
             self.mujoco_objects,
             self.visual_objects,
         )
+
+        # warning set place range
+        #if self.single_object_mode == 1 or self.single_object_mode == 2:
+        #    self.model.place_objects(place_radius=0.2)
+        #else:
         self.model.place_objects()
+
         self.model.place_visual()
         self.bin_pos = string_to_array(self.model.bin2_body.get("pos"))
         self.bin_size = self.model.bin_size
@@ -300,6 +306,11 @@ class SawyerPickPlace(SawyerEnv):
         elif self.single_object_mode == 2:
             self.obj_to_use = (self.item_names[self.object_id] + "{}").format(0)
             self.clear_objects(self.obj_to_use)
+
+        # reset joint positions
+        init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        init_pos += np.random.randn(init_pos.shape[0]) * 0.02
+        self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
 
     def reward(self, action=None):
         # compute sparse rewards
@@ -641,7 +652,7 @@ if __name__ == '__main__':
     import os
 
 
-    env = SawyerPickPlace(has_renderer=True,
+    env = SawyerPickPlaceSingle(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      #camera_name='birdview')
@@ -687,10 +698,10 @@ if __name__ == '__main__':
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
         depth = cv2.flip(depth, 0) # horizontal flip
-        #cv2.imshow('color', color)
-        #cv2.waitKey(100)
-        #cv2.imshow('depth', depth)
-        #cv2.waitKey(100)
+        cv2.imshow('color', color)
+        cv2.waitKey(100)
+        cv2.imshow('depth', depth)
+        cv2.waitKey(100)
 
         #lower, upper = np.array(hsv_range[color_type])
         #hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)

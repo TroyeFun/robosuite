@@ -56,7 +56,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         reset_color=True,
         with_target=False,
         place_at_center=True,
-        pick_only=True,
+        pick_only=False,
     ):
         """
         Args:

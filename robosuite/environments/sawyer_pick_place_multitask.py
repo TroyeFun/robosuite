@@ -723,7 +723,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         grasp_mult = 0.35
         lift_mult = 0.5
         hover_mult = 0.7
-        place_mult = 10
+        place_mult = 1
 
         reward = base_reward + self._check_placed() * place_mult
         objs_to_reach = [self.target_body_id]

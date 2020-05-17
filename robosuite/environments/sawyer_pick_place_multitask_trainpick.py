@@ -610,8 +610,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             target_quat = np.array([0.66, -0.74, 0, 0.03])
             di['env_info']['place_target_pose'] = np.concatenate([target_pos, target_quat])
 
-            gripper_pos = self.pose_in_base_from_name('right_gripper_base')[:3, 3]
-            dist_gripper_to_target_bin = np.linalg.norm(gripper_pos - target_pos)
+            gripper_pos = self.pose_in_base_from_name('right_gripper')[:3, 3]
+            dist_gripper_to_target_bin = np.linalg.norm(gripper_pos[:2] - target_pos[:2])
             if dist_gripper_to_target_bin < 0.1:
                 di['env_info']['if_drop'] = np.array(True)
             else:
@@ -668,6 +668,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.current_task = 'pick'
         else:
             self.current_task = 'place'
+            print('debug: place !!')
         #TODO set target to another object if the current target is placed
 
     def _check_picked(self):
@@ -679,6 +680,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         # target is higher than the table top above a margin
         return target_height > table_height + 0.1
+        #return target_height > table_height + 0.2
 
     def _check_placed(self):
         gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]
@@ -708,8 +710,9 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         #TODO targetless mode
         # support target mode only
         # reaching reward
+        reward = 0
         if self._check_picked():
-            reward = 1.0
+            reward += 1.0
 
         target_pos = self.sim.data.body_xpos[self.target_body_id]
         gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]

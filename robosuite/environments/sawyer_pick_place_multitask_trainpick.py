@@ -213,6 +213,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         self.pick_only = pick_only
         print('warning: pick_only', pick_only)
 
+        self.drop_wait_cnt = 0
+
     def _load_model(self):
         super()._load_model()
         self.mujoco_robot.set_base_xpos([0, 0, 0])
@@ -612,7 +614,12 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
             gripper_pos = self.pose_in_base_from_name('right_gripper')[:3, 3]
             dist_gripper_to_target_bin = np.linalg.norm(gripper_pos[:2] - target_pos[:2])
-            if dist_gripper_to_target_bin < 0.1:
+
+            if dist_gripper_to_target_bin < 0.05:
+                self.drop_wait_cnt += 1
+            else:
+                self.drop_wait_cnt = 0
+            if self.drop_wait_cnt >= 5:
                 di['env_info']['if_drop'] = np.array(True)
             else:
                 di['env_info']['if_drop'] = np.array(False)
@@ -668,7 +675,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.current_task = 'pick'
         else:
             self.current_task = 'place'
-            print('debug: place !!')
         #TODO set target to another object if the current target is placed
 
     def _check_picked(self):

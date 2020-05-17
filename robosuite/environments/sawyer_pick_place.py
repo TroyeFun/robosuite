@@ -732,7 +732,7 @@ if __name__ == '__main__':
         target_bin_id = 3
         pos += np.array(env.target_bin_placements[target_bin_id]) - np.array(env.bin_pos) + np.array([0, 0, 0.3])
         quat = np.array([0.66, -0.74, 0, 0.03])
-        gripper = np.array([1])
+        gripper = np.array([-1])
         action = np.concatenate([pos, quat, gripper])
         env.step({'action': action, 'use_ik_mode': True})
 

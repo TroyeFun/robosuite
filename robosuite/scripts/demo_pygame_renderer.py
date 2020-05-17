@@ -34,7 +34,7 @@ if __name__ == "__main__":
         ignore_done=True,
         camera_height=height,
         camera_width=width,
-        show_gripper_visualization=True,
+        gripper_visualization=True,
         use_camera_obs=True,
         use_object_obs=False,
     )

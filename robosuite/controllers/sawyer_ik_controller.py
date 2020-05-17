@@ -25,7 +25,7 @@ class SawyerIKController(Controller):
     do inverse kinematics computations.
     """
 
-    def __init__(self, bullet_data_path, robot_jpos_getter):
+    def __init__(self, bullet_data_path, robot_jpos_getter, use_abs_pos=False):
         """
         Args:
             bullet_data_path (str): base path to bullet data.
@@ -40,6 +40,9 @@ class SawyerIKController(Controller):
         # returns current robot joint positions
         self.robot_jpos_getter = robot_jpos_getter
 
+        # use absolute pos in robot frame if true, else use relative pos w.r.t current pos
+        self.use_abs_pos = use_abs_pos
+
         # Do any setup needed for Inverse Kinematics.
         self.setup_inverse_kinematics()
 
@@ -47,6 +50,9 @@ class SawyerIKController(Controller):
         self.user_sensitivity = .3
 
         self.sync_state()
+
+        self.commanded_pos = None
+        self.commanded_rotation = None
 
     def get_control(self, dpos=None, rotation=None):
         """
@@ -71,9 +77,18 @@ class SawyerIKController(Controller):
 
         # Compute new target joint positions if arguments are provided
         if (dpos is not None) and (rotation is not None):
-            self.commanded_joint_positions = self.joint_positions_for_eef_command(
-                dpos, rotation
-            )
+            if not self.use_abs_pos:
+                self.commanded_joint_positions = self.joint_positions_for_eef_command(
+                    dpos, rotation
+                )
+            else:
+                if self.commanded_pos is None or self.commanded_rotation is None or \
+                  not (np.allclose(dpos, self.commanded_pos) and np.allclose(rotation, self.commanded_rotation)):
+                    self.commanded_joint_positions = self.joint_positions_for_eef_command(
+                        dpos, rotation
+                    )
+        self.commanded_pos = dpos
+        self.commanded_rotation = rotation
 
         # P controller from joint positions (from IK) to velocities
         velocities = np.zeros(7)
@@ -248,12 +263,16 @@ class SawyerIKController(Controller):
             A list of size @num_joints corresponding to the target joint angles.
         """
 
-        self.ik_robot_target_pos += dpos * self.user_sensitivity
+        if not self.use_abs_pos:
+            self.ik_robot_target_pos += dpos * self.user_sensitivity
+        else:
+            self.ik_robot_target_pos = dpos
 
         # this rotation accounts for rotating the end effector by 90 degrees
         # from its rest configuration. The corresponding line in most demo
         # scripts is:
-        #   `env.set_robot_joint_positions([0, -1.18, 0.00, 2.18, 0.00, 0.57, 1.5708])`
+        #   `env.set_robot_joint_positions([0, -1.18, 0.00, 2., 0.00, 0.57, 1.5708])`
+        # why rotate?
         rotation = rotation.dot(
             T.rotation_matrix(angle=-np.pi / 2, direction=[0., 0., 1.], point=None)[
                 :3, :3

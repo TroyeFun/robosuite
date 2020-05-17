@@ -456,6 +456,8 @@ if __name__ == '__main__':
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')
+                     #camera_width=1024,
+                     #camera_height=1024,
                     #object_choice='cereal',
                     #object_choice='bread',
                     #object_choice='milk',
@@ -500,8 +502,8 @@ if __name__ == '__main__':
         color, depth = obs['image'], obs['depth']
         color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
         color = cv2.flip(color, 0) # horizontal flip
-        cv2.imshow('color', color)
-        cv2.waitKey(100)
+        #cv2.imshow('color', color)
+        #cv2.waitKey(100)
 
         #color = color[75:159, 85:169]
 
@@ -564,8 +566,12 @@ if __name__ == '__main__':
         #    action = np.random.rand(8)
         #    env.step(action)
         step += 1
-        print(obs['cube_pos'], obs['cube_quat'], obs['gripper_to_cube'])
-        pdb()
+        #print(obs['cube_pos'], obs['cube_quat'], obs['gripper_to_cube'])
+        cam_id = env.sim.model.camera_name2id(env.camera_name)
+        fovy = env.sim.model.cam_fovy[cam_id]
+        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
+        #print(f)
+        #pdb()
         
 
 """

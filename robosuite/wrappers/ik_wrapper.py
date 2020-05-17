@@ -14,7 +14,7 @@ from robosuite.wrappers import Wrapper
 class IKWrapper(Wrapper):
     env = None
 
-    def __init__(self, env, action_repeat=1):
+    def __init__(self, env, action_repeat=1, use_abs_pose=False):
         """
         Initializes the inverse kinematics wrapper.
         This wrapper allows for controlling the robot through end effector
@@ -26,6 +26,8 @@ class IKWrapper(Wrapper):
                 control actions will be commanded per high-level end effector
                 action. Higher values will allow for more precise control of
                 the end effector to the commanded targets.
+            use_abs_pose (bool): True if take absolute pos and rotation w.r.t. base
+                frame, else take relative pos and rotation w.r.t. current pose.
         """
         super().__init__(env)
         if self.env.mujoco_robot.name == "sawyer":
@@ -34,6 +36,7 @@ class IKWrapper(Wrapper):
             self.controller = SawyerIKController(
                 bullet_data_path=os.path.join(robosuite.models.assets_root, "bullet_data"),
                 robot_jpos_getter=self._robot_jpos_getter,
+                use_abs_pos=use_abs_pose,
             )
         elif self.env.mujoco_robot.name == "baxter":
             from robosuite.controllers import BaxterIKController
@@ -49,6 +52,7 @@ class IKWrapper(Wrapper):
             )
 
         self.action_repeat = action_repeat
+        self.use_abs_pose = use_abs_pose
 
     def set_robot_joint_positions(self, positions):
         """
@@ -125,8 +129,15 @@ class IKWrapper(Wrapper):
         array. The first three elements are taken to be displacement in position, and a
         quaternion indicating the change in rotation with respect to @old_quat.
         """
-        return {
-            "dpos": action[:3],
-            # IK controller takes an absolute orientation in robot base frame
-            "rotation": T.quat2mat(T.quat_multiply(old_quat, action[3:7])),
-        }
+        if self.use_abs_pose:
+            return {
+                "dpos": action[:3],
+                # IK controller takes an absolute orientation in robot base frame
+                "rotation": T.quat2mat(action[3:7]),
+            }
+        else:
+            return {
+                "dpos": action[:3],
+                # IK controller takes an absolute orientation in robot base frame
+                "rotation": T.quat2mat(T.quat_multiply(old_quat, action[3:7])),
+            }

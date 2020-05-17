@@ -249,7 +249,9 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             self.visual_objects,
         )
 
-        self._set_target_object()
+        if self.reset_color:
+            self._setup_color()
+        self._set_target_object(get_ref=False)
 
         # warning set place range
         if self.place_at_center and (self.single_object_mode == 1 or self.single_object_mode == 2):
@@ -261,8 +263,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         self.bin_pos = string_to_array(self.model.bin2_body.get("pos"))
         self.bin_size = self.model.bin_size
 
-        if self.reset_color:
-            self._setup_color()
 
     def _setup_color(self):
         colors = ['purple', 'green', 'blue', 'yellow']
@@ -339,6 +339,10 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             bin_y_low += self.bin_size[1] / 4.
             self.target_bin_placements[j, :] = [bin_x_low, bin_y_low, self.bin_pos[2]]
 
+        self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
+        self.target_body_id = self.obj_body_id[self.target_object]
+        self.target_geom_id = self.obj_geom_id[self.target_object]
+
     def _reset_internal(self):
         super()._reset_internal()
 
@@ -353,7 +357,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         self.current_task = 'pick'
 
-    def _set_target_object(self):
+    def _set_target_object(self, get_ref=True):
         # TODO: higher level strategy for target choice.
 
         # choose by random
@@ -377,9 +381,10 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             #self.target_color = vis.color2id[self.object_color[self.target_object]]
             self.target_color = self.object_color[self.target_object]
 
-        self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
-        self.target_body_id = self.obj_body_id[self.target_object]
-        self.target_geom_id = self.obj_geom_id[self.target_object]
+        if get_ref:
+            self.target_id = self.object_to_id[self.target_object.strip('0').lower()]
+            self.target_body_id = self.obj_body_id[self.target_object]
+            self.target_geom_id = self.obj_geom_id[self.target_object]
 
     def reward(self, action=None):
         # compute sparse rewards

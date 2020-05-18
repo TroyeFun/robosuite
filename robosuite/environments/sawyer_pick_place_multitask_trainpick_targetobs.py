@@ -251,7 +251,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         if self.reset_color:
             self._setup_color()
-        self._set_target_object(get_ref=False)
+        self._set_target_object(get_ref=False, reset=True)
 
         # warning set place range
         if self.place_at_center and (self.single_object_mode == 1 or self.single_object_mode == 2):
@@ -357,11 +357,11 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
 
         self.current_task = 'pick'
 
-    def _set_target_object(self, get_ref=True):
+    def _set_target_object(self, get_ref=True, reset=False):
         # TODO: higher level strategy for target choice.
 
         # choose by random
-        if self.target_object is None:
+        if self.target_object is None or reset:
             if self.single_object_mode == 0:
                 self.target_object = (random.choice(self.item_names) + "{}").format(0)
             elif self.single_object_mode == 1:

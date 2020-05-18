@@ -488,7 +488,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
                 di['env_info'] = OrderedDict()
 
             # exp sender weakref does not support data type like bool and int
-            di['env_info']['if_place'] = np.array(True)
+            di['env_info']['if_place'] = np.array(1)  # True
 
             target_pos = self.pose_in_base_from_name('bin2')[:3, 3]
             target_pos += np.array(self.target_bin_placements[self.target_id]) - np.array(self.bin_pos) + \
@@ -504,9 +504,9 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             else:
                 self.drop_wait_cnt = 0
             if self.drop_wait_cnt >= 5:
-                di['env_info']['if_drop'] = np.array(True)
+                di['env_info']['if_drop'] = np.array(1)
             else:
-                di['env_info']['if_drop'] = np.array(False)
+                di['env_info']['if_drop'] = np.array(0)
 
         return di
 

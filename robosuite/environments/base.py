@@ -3,6 +3,7 @@ from mujoco_py import MjSim, MjRenderContextOffscreen
 from mujoco_py import load_model_from_xml
 
 from robosuite.utils import SimulationError, XMLError, MujocoPyRenderer
+from ipdb import set_trace as pdb
 
 REGISTERED_ENVS = {}
 

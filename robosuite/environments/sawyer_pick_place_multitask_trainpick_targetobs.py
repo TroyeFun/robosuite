@@ -367,7 +367,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             elif self.single_object_mode == 1:
                 self.target_object = (random.choice(self.item_names) + "{}").format(0)
             elif self.single_object_mode == 2:
-                self.target_object = (self.item_names[self.object_id] + "{}").format(0)
+                self.target_object = (self.item_names[self.target_id] + "{}").format(0)
         else:
             self._check_success()
             if self.objects_in_bins[self.target_id] and self.single_object_mode != 2:  # update target obj

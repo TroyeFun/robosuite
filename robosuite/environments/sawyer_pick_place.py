@@ -656,7 +656,7 @@ if __name__ == '__main__':
     from robosuite.wrappers import IKWrapper, DoubleModeIKWrapper
     import pybullet as p
 
-    env = SawyerPickPlaceSingle(has_renderer=True,
+    env = SawyerPickPlace(has_renderer=True,
     #env = SawyerPickPlace(has_renderer=True,
                      camera_depth=True,
                      camera_height=1024,
@@ -689,8 +689,8 @@ if __name__ == '__main__':
 
     }
 
-    #env.sim.model.geom_matid[67:71] = -1   # set material to -1
     for obj in objs:
+        env.sim.model.geom_matid[ids[obj]] = -1   # set material to -1
         env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
 
     color_type = 'blue'
@@ -698,47 +698,47 @@ if __name__ == '__main__':
     step = 1
     direct = 1
     while True:
-        env.sim.model.geom_matid[67:71] = -1   # set material to -1
         for obj in objs:
+            env.sim.model.geom_matid[ids[obj]] = -1   # set material to -1
             env.sim.model.geom_rgba[ids[obj],:] = rgba_color[obj_colors[obj]]
         env.sim.forward()
         env.render()
-        #obs = env._get_observation()
-        #color, depth = obs['image'], obs['depth']
-        #rgb = color
-        #color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
-        #color = cv2.flip(color, 0) # horizontal flip
-        #depth = cv2.flip(depth, 0) # horizontal flip
-        #cv2.imshow('color', color)
-        #cv2.waitKey(100)
-        #cv2.imshow('depth', depth)
-        #cv2.waitKey(100)
+        obs = env._get_observation()
+        color, depth = obs['image'], obs['depth']
+        rgb = color
+        color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
+        color = cv2.flip(color, 0) # horizontal flip
+        depth = cv2.flip(depth, 0) # horizontal flip
+        cv2.imshow('color', color)
+        cv2.waitKey(100)
+        cv2.imshow('depth', depth)
+        cv2.waitKey(100)
 
-        #lower, upper = np.array(hsv_range[color_type])
-        #hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
-        #mask = cv2.inRange(hsv, lower, upper)
-        #cv2.imshow('mask', mask)
-        #cv2.waitKey(100)
+        lower, upper = np.array(hsv_range[color_type])
+        hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, lower, upper)
+        cv2.imshow('mask', mask)
+        cv2.waitKey(100)
 
-        #import xml.etree.ElementTree as ET
-        #cv2.imwrite('../../exp/color.png', color)
-        #cv2.imwrite('../../exp/depth.png', depth*150)
-        #cv2.imwrite('../../exp/mask.png', mask)
+        import xml.etree.ElementTree as ET
+        cv2.imwrite('../../exp/color.png', color)
+        cv2.imwrite('../../exp/depth.png', depth*150)
+        cv2.imwrite('../../exp/mask.png', mask)
 
-        bin_pose_in_base = env.pose_in_base_from_name('bin2')
-        #pos = env.bin_pos + np.array([0, 0, 0.0])
-        #pos = np.array([ 0.56, 0.53,  0.09 + 0.001 * step])
-        pos = bin_pose_in_base[:3, 3]
-        target_bin_id = 3
-        pos += np.array(env.target_bin_placements[target_bin_id]) - np.array(env.bin_pos) + np.array([0, 0, 0.3])
-        quat = np.array([0.66, -0.74, 0, 0.03])
-        gripper = np.array([-1])
-        action = np.concatenate([pos, quat, gripper])
-        env.step({'action': action, 'use_ik_mode': True})
+        #bin_pose_in_base = env.pose_in_base_from_name('bin2')
+        ##pos = env.bin_pos + np.array([0, 0, 0.0])
+        ##pos = np.array([ 0.56, 0.53,  0.09 + 0.001 * step])
+        #pos = bin_pose_in_base[:3, 3]
+        #target_bin_id = 3
+        #pos += np.array(env.target_bin_placements[target_bin_id]) - np.array(env.bin_pos) + np.array([0, 0, 0.3])
+        #quat = np.array([0.66, -0.74, 0, 0.03])
+        #gripper = np.array([-1])
+        #action = np.concatenate([pos, quat, gripper])
+        #env.step({'action': action, 'use_ik_mode': True})
 
-        #eef_pos_in_world = np.array(p.getLinkState(env.controller.ik_robot, 6)[0])
-        #eef_orn_in_world = np.array(p.getLinkState(env.controller.ik_robot, 6)[1])
-        eef_pose_in_base = env.controller.ik_robot_eef_joint_cartesian_pose()
+        ##eef_pos_in_world = np.array(p.getLinkState(env.controller.ik_robot, 6)[0])
+        ##eef_orn_in_world = np.array(p.getLinkState(env.controller.ik_robot, 6)[1])
+        #eef_pose_in_base = env.controller.ik_robot_eef_joint_cartesian_pose()
 
         #jpos = env.controller.commanded_joint_positions
         #env.sim.data.qpos[env._ref_joint_pos_indexes] = jpos
@@ -751,9 +751,8 @@ if __name__ == '__main__':
         #    direct = -1
         #elif step == 0:
         #    direct = 1
-        step += direct
-        #print(step)
-        obs = env._get_observation()
-        print(obs['eef_pos'], pos, env._right_hand_pos)
-        if step == 200:
-            ipdb.set_trace()
+        #step += direct
+        ##print(step)
+        #obs = env._get_observation()
+        #print(obs['eef_pos'], pos, env._right_hand_pos)
+        ipdb.set_trace()

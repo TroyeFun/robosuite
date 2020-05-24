@@ -110,7 +110,7 @@ def save_mask(img, path):
     """
     cv2.imwrite(path + '/mask.png', img)
 
-def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color, x_pix=None, y_pix=None, flip=True, format='chw'):
+def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, near, far, color, x_pix=None, y_pix=None, flip=True, format='chw'):
     """
     rgbd_img: 4 x h x w
     cam_mat: camera rotation matrix, 3x3 np.array 
@@ -119,6 +119,10 @@ def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color, x_pix=None, y_pix=None, fl
     if format == 'chw':
         rgbd_img = rgbd_img.transpose(1,2,0)
     color_img, depth_img = rgbd_img[:,:,:3], rgbd_img[:,:,3]
+
+    # convert depth image from [0, 1] to meters, refer to https://github.com/openai/mujoco-py/issues/520
+    depth_img = near / (1 - depth_img * (1 - near / far))
+
     h, w = depth_img.shape
     mask = get_mask(color_img, color, flip=flip, format='hwc')
     if flip:
@@ -136,8 +140,8 @@ def get_pcd(rgbd_img, cam_mat, cam_pos, cam_f, color, x_pix=None, y_pix=None, fl
 
     mask_index = mask > 0
 
-    x_pcd = x_pcd[mask_index] if flip else -x_pcd[mask_index]
-    y_pcd = -y_pcd[mask_index]
+    x_pcd = x_pcd[mask_index]
+    y_pcd = -y_pcd[mask_index] if flip else y_pcd[mask_index]
     z_pcd = -depth_img[mask_index]
     pcd = np.stack([x_pcd, y_pcd, z_pcd], axis=0)
 

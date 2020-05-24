@@ -719,6 +719,12 @@ class SawyerPickPlaceSingleMultiTaskTarget(SawyerPickPlaceMultiTask):
             assert key not in kwargs, 'invalid set of argument: ' + key
         super().__init__(single_object_mode=1, **kwargs)
 
+class SawyerPickPlaceSingleMultiTaskTargetRandomPlace(SawyerPickPlaceMultiTask):
+    def __init__(self, **kwargs):
+        exclude_keys = ['single_object_mode', 'multi_task_mode', 'with_target', 'place_at_center']
+        for key in exclude_keys:
+            assert key not in kwargs, 'invalid set of argument: ' + key
+        super().__init__(single_object_mode=1, place_at_center=False, **kwargs)
 
 class SawyerPickPlaceMilkMultiTaskTarget(SawyerPickPlaceMultiTask):
     def __init__(self, **kwargs):

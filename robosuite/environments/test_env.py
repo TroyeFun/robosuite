@@ -136,8 +136,8 @@ class SawyerLift(SawyerEnv):
             )
         elif self.arena_type == 'table':
             self.placement_initializer = UniformRandomSampler(
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
+                x_range=[-.33, -.33],
+                y_range=[-.33, -.33],
                 #x_range=[-0., 0.],
                 #y_range=[-0., 0.],
                 ensure_object_boundary_in_range=False,
@@ -181,7 +181,7 @@ class SawyerLift(SawyerEnv):
         Loads an xml model, puts it in self.model
         """
         super()._load_model()
-        self.mujoco_robot.set_base_xpos([0, 0, 0])
+        self.mujoco_robot.set_base_xpos([-2.0, 0, 0])
         
         #print('warning: load model')
         #self.mujoco_robot.set_base_xpos([-1, 0, 0])
@@ -500,11 +500,11 @@ if __name__ == '__main__':
 
         obs = env._get_observation()
         color, depth = obs['image'], obs['depth']
-        color =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
-        color = cv2.flip(color, 0) # horizontal flip
-        cv2.imshow('color', color)
+        color_bgr =cv2.cvtColor(color, cv2.COLOR_RGB2BGR)
+        #color_bgr = cv2.flip(color_bgr, 0) # horizontal flip
+        cv2.imshow('color', color_bgr)
         cv2.waitKey(100)
-        depth = cv2.flip(depth, 0) # horizontal flip
+        #depth1 = cv2.flip(depth, 0) # horizontal flip
         cv2.imshow('depth', depth)
         cv2.waitKey(100)
 
@@ -525,15 +525,6 @@ if __name__ == '__main__':
         y = np.arange(env.camera_height)[:, np.newaxis] - env.camera_height / 2
         y = np.tile(y, (1, env.camera_width))
         
-        cam_id = env.sim.model.camera_name2id(env.camera_name)
-        fovy = env.sim.model.cam_fovy[cam_id]
-        cam_pos = env.sim.model.cam_pos[cam_id]
-        cam_quat = env.sim.model.cam_quat[cam_id]
-        cam_mat = T.pose2mat((cam_pos, T.convert_quat(cam_quat, 'xyzw')))
-        # can directly get from 
-        # cam_mat = env.sim.model.cam_mat0[cam_id]
-        
-        f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
 
         #f *= 0.1
         #depth *= 2.7
@@ -566,10 +557,28 @@ if __name__ == '__main__':
         #    action = np.random.rand(8)
         #    env.step(action)
         step += 1
-        #print(obs['cube_pos'], obs['cube_quat'], obs['gripper_to_cube'])
+
         cam_id = env.sim.model.camera_name2id(env.camera_name)
         fovy = env.sim.model.cam_fovy[cam_id]
+        cam_pos = env.sim.model.cam_pos[cam_id]
+        cam_mat = env.sim.model.cam_mat0[cam_id].reshape(3,3)
+        
         f = 0.5 * env.camera_height / math.tan(fovy * math.pi / 360)
+        
+        # convert depth from [0, 1] to meters, refer to https://github.com/openai/mujoco-py/issues/520
+        extent = extent = env.sim.model.stat.extent
+        near = near = env.sim.model.vis.map.znear * extent
+        far = env.sim.model.vis.map.zfar * extent
+        depth2 = near / (1 - depth * (1 - near / far))
+
+        rgbd_img = np.concatenate([color, depth2[:, :,np.newaxis]], axis=2)
+
+        #cam_pos = np.zeros(3)
+        pcd = vis.get_pcd(rgbd_img, cam_mat, cam_pos, f, 'blue', flip=False, format='hwc')
+        #cam_mat1 = np.eye(3)
+        #pcd1 = vis.get_pcd(rgbd_img, cam_mat1, cam_pos, f, 'blue', flip=False, format='hwc')
+        vis.save_pcd(pcd)
+
         #print(f)
         pdb()
         

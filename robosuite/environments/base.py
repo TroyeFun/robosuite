@@ -188,7 +188,7 @@ class MujocoEnv(metaclass=EnvMeta):
 
     def _get_observation(self):
         """Returns an OrderedDict containing observations [(name_string, np.array), ...]."""
-        return OrderedDict()
+        return OrderedDict({'env_info': OrderedDict()})
 
     def step(self, action):
         """Takes a step in simulation with control command @action."""

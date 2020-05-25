@@ -53,6 +53,7 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         camera_depth=False,
         reset_color=True,
         place_at_center=True,
+        obj_pose_in_env_info=False,
     ):
         """
         Args:
@@ -132,6 +133,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             reset_color (bool): True if remove the texture of objects and reset their color
 
             with_target (bool): True if set a specific target object
+
+            obj_pose_in_env_info (bool): True if add obj_pos and obj_quat to obs['env_info']
         """
 
         # task settings
@@ -202,6 +205,8 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
         ]
 
         self.drop_wait_cnt = 0
+
+        self.obj_pose_in_env_info = obj_pose_in_env_info
 
     def _load_model(self):
         super()._load_model()
@@ -484,9 +489,6 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
             di["object-state"] = np.concatenate([di[k] for k in object_state_keys])
 
         if self.current_task == 'place':
-            if 'env_info' not in di:
-                di['env_info'] = OrderedDict()
-
             # exp sender weakref does not support data type like bool and int
             di['env_info']['if_place'] = np.array(1)  # True
 
@@ -507,6 +509,15 @@ class SawyerPickPlaceMultiTask(SawyerEnv):
                 di['env_info']['if_drop'] = np.array(1)
             else:
                 di['env_info']['if_drop'] = np.array(0)
+
+        if self.obj_pose_in_env_info:
+            obj_str = str(self.item_names_org[self.target_id]) + "0"
+            obj_pos = np.array(self.sim.data.body_xpos[self.obj_body_id[obj_str]])
+            obj_quat = T.convert_quat(
+                self.sim.data.body_xquat[self.obj_body_id[obj_str]], to="xyzw"
+            )
+            di['env_info']["obj_pos"] = obj_pos
+            di['env_info']["obj_quat"] = obj_quat
 
         return di
 
@@ -764,7 +775,8 @@ if __name__ == '__main__':
                      camera_depth=True,
                      #camera_name='birdview')
                      #camera_name='frontview')
-                     camera_name='agentview')
+                     camera_name='agentview',
+                     obj_pose_in_env_info=True)
 
 
     #env.sim.model.geom_matid[67:71] = -1   # set material to -1
